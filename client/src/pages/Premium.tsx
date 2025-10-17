@@ -2,32 +2,37 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
-import { Check, Lock, Sparkles } from "lucide-react";
+import { Check, Lock, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import { useState } from "react";
 
 export default function Premium() {
   const [, setLocation] = useLocation();
+  const [processingPlan, setProcessingPlan] = useState<"monthly" | "yearly" | null>(null);
+  
   const { data: subscriptionStatus } = trpc.subscription.getStatus.useQuery();
-  const upgradeMutation = trpc.subscription.upgrade.useMutation({
+  
+  const createPaymentMutation = trpc.subscription.createPayment.useMutation({
     onSuccess: (data) => {
-      toast.success(data.message);
-      setLocation("/");
+      if (data.approvalUrl) {
+        // Redirect to PayPal for payment
+        window.location.href = data.approvalUrl;
+      } else {
+        toast.error("Payment URL not available");
+        setProcessingPlan(null);
+      }
     },
     onError: (error) => {
-      toast.error("Upgrade failed: " + error.message);
+      toast.error("Failed to initiate payment: " + error.message);
+      setProcessingPlan(null);
     },
   });
 
   const handleUpgrade = (plan: "monthly" | "yearly") => {
-    // In production, this would integrate with a payment processor
-    // For now, we'll simulate the upgrade
-    toast.info("Redirecting to payment...");
-    
-    // Simulate payment success after 2 seconds
-    setTimeout(() => {
-      upgradeMutation.mutate({ plan });
-    }, 2000);
+    setProcessingPlan(plan);
+    toast.info("Redirecting to PayPal...");
+    createPaymentMutation.mutate({ plan });
   };
 
   if (subscriptionStatus?.isActive) {
@@ -113,11 +118,18 @@ export default function Premium() {
               </ul>
               <Button 
                 onClick={() => handleUpgrade("monthly")}
-                disabled={upgradeMutation.isPending}
+                disabled={processingPlan !== null}
                 className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
                 size="lg"
               >
-                {upgradeMutation.isPending ? "Processing..." : "Subscribe Monthly"}
+                {processingPlan === "monthly" ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Subscribe Monthly"
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -171,11 +183,18 @@ export default function Premium() {
               </ul>
               <Button 
                 onClick={() => handleUpgrade("yearly")}
-                disabled={upgradeMutation.isPending}
+                disabled={processingPlan !== null}
                 className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
                 size="lg"
               >
-                {upgradeMutation.isPending ? "Processing..." : "Subscribe Yearly"}
+                {processingPlan === "yearly" ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Subscribe Yearly"
+                )}
               </Button>
             </CardContent>
           </Card>

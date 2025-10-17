@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Dashboard from "./pages/Dashboard";
 import Premium from "./pages/Premium";
+import PremiumSuccess from "./pages/PremiumSuccess";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -13,6 +14,7 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Dashboard} />
       <Route path="/premium" component={Premium} />
+      <Route path="/premium/success" component={PremiumSuccess} />
       <Route path={" /404"} component={NotFound} />      {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>

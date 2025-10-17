@@ -10,6 +10,7 @@ import { MomentumWindowAnalyzer } from "./momentumWindow";
 import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist, getDb, getUser } from "./db";
 import { users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
+import { createPayPalOrder, capturePayPalOrder } from "./paypal";
 
 export const appRouter = router({
   system: systemRouter,
@@ -52,13 +53,33 @@ export const appRouter = router({
       };
     }),
 
-    // Upgrade to premium (called after payment)
-    upgrade: protectedProcedure
+    // Create PayPal order for subscription
+    createPayment: protectedProcedure
+      .input(z.object({ plan: z.enum(["monthly", "yearly"]) }))
+      .mutation(async ({ input }) => {
+        const result = await createPayPalOrder(input.plan);
+        if (!result.success) {
+          throw new Error(result.error || "Failed to create payment");
+        }
+        return {
+          orderId: result.orderId,
+          approvalUrl: result.approvalUrl,
+        };
+      }),
+
+    // Capture PayPal payment and activate subscription
+    capturePayment: protectedProcedure
       .input(z.object({ 
+        orderId: z.string(),
         plan: z.enum(["monthly", "yearly"]),
-        paymentId: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
+        // Capture the PayPal payment
+        const captureResult = await capturePayPalOrder(input.orderId);
+        if (!captureResult.success) {
+          throw new Error(captureResult.error || "Payment capture failed");
+        }
+
         const db = await getDb();
         if (!db) throw new Error("Database not available");
 
@@ -82,6 +103,7 @@ export const appRouter = router({
         return {
           success: true,
           expiry,
+          amount: captureResult.amount,
           message: `Premium access activated until ${expiry.toLocaleDateString()}`,
         };
       }),
