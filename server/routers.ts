@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { fetchForexData, fetchAllForexData, FOREX_PAIRS, ForexPairName } from "./forexData";
+import { getPairMarketStatus, isForexMarketOpen, getCurrentSessionName, formatTimeUntilOpen } from "./marketHours";
 import { SignalEngine } from "./signalEngine";
 import { MomentumWindowAnalyzer } from "./momentumWindow";
 import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist } from "./db";
@@ -173,6 +174,42 @@ export const appRouter = router({
         await removeFromWatchlist(ctx.user.id, input.pair);
         return { success: true };
       }),
+  }),
+
+  market: router({
+    // Get overall market status
+    getStatus: publicProcedure.query(() => {
+      return {
+        isOpen: isForexMarketOpen(),
+        currentSession: getCurrentSessionName(),
+      };
+    }),
+
+    // Get market status for a specific pair
+    getPairStatus: publicProcedure
+      .input(z.object({ pair: z.string() }))
+      .query(({ input }) => {
+        const status = getPairMarketStatus(input.pair);
+        return {
+          ...status,
+          nextOpenFormatted: status.nextOpenTime ? formatTimeUntilOpen(status.nextOpenTime) : null,
+        };
+      }),
+
+    // Get market status for all pairs
+    getAllPairStatuses: publicProcedure.query(() => {
+      const statuses: Record<string, any> = {};
+      
+      for (const pair of Object.keys(FOREX_PAIRS)) {
+        const status = getPairMarketStatus(pair);
+        statuses[pair] = {
+          ...status,
+          nextOpenFormatted: status.nextOpenTime ? formatTimeUntilOpen(status.nextOpenTime) : null,
+        };
+      }
+
+      return statuses;
+    }),
   }),
 
   momentum: router({

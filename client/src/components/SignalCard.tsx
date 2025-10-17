@@ -1,7 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowDown, ArrowUp, TrendingUp, X } from "lucide-react";
+import { ArrowDown, ArrowUp, TrendingUp, X, Clock } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 
 interface SignalCardProps {
   signal: {
@@ -27,6 +28,10 @@ export function SignalCard({ signal, onDismiss }: SignalCardProps) {
   const strength = parseInt(signal.strength);
   const isHighPriority = strength >= 7; // High priority signals get blinking alert
 
+  // Fetch market status for this pair
+  const { data: marketStatus } = trpc.market.getPairStatus.useQuery({ pair: signal.pair });
+  const isMarketClosed = marketStatus && !marketStatus.isOpen;
+
   const strategyLabels: Record<string, string> = {
     swing: "Swing Trading",
     day: "Day Trading",
@@ -42,6 +47,8 @@ export function SignalCard({ signal, onDismiss }: SignalCardProps) {
   return (
     <Card className={`relative ${isBuy ? "border-l-4 border-l-green-500" : "border-l-4 border-l-red-500"} ${
       isHighPriority ? "shadow-lg" : ""
+    } ${
+      isMarketClosed ? "opacity-60 bg-muted/30" : ""
     }`}>
       {/* Blinking Alert Indicator for High Priority Signals */}
       {isHighPriority && (
@@ -63,12 +70,23 @@ export function SignalCard({ signal, onDismiss }: SignalCardProps) {
               <CardDescription className="flex items-center gap-2 mt-1">
                 <Badge variant="outline">{strategyLabels[signal.strategy]}</Badge>
                 <Badge variant="outline">{signal.timeframe}</Badge>
-                {isHighPriority && (
+                {isHighPriority && !isMarketClosed && (
                   <Badge className="bg-orange-500 text-white animate-pulse">
                     🔥 HIGH PRIORITY
                   </Badge>
                 )}
+                {isMarketClosed && (
+                  <Badge variant="outline" className="bg-gray-500/20 text-gray-600 dark:text-gray-400">
+                    <Clock className="h-3 w-3 mr-1" />
+                    Market Closed
+                  </Badge>
+                )}
               </CardDescription>
+              {isMarketClosed && marketStatus?.nextOpenFormatted && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {marketStatus.nextOpenFormatted}
+                </p>
+              )}
             </div>
           </div>
           {onDismiss && (

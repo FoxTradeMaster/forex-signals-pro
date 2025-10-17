@@ -9,17 +9,21 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAudioNotification } from "@/hooks/useAudioNotification";
-import { RefreshCw, Volume2, VolumeX, TrendingUp, Clock, Zap } from "lucide-react";
+import { RefreshCw, Volume2, VolumeX, TrendingUp, Clock, Zap, Filter } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Dashboard() {
   const { volume, setVolume, enabled, setEnabled, playNotification } = useAudioNotification();
   const [lastSignalCount, setLastSignalCount] = useState(0);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [hideClosedMarkets, setHideClosedMarkets] = useState(false);
 
   // Fetch active signals
   const { data: signals, isLoading: signalsLoading, refetch: refetchSignals } = 
     trpc.signals.getActive.useQuery({ limit: 50 });
+
+  // Fetch market statuses
+  const { data: marketStatuses } = trpc.market.getAllPairStatuses.useQuery();
 
   // Fetch current session
   const { data: currentSession } = trpc.momentum.getCurrentSession.useQuery();
@@ -104,8 +108,18 @@ export default function Dashboard() {
     generateSignals.mutate();
   };
 
-  const buySignals = signals?.filter(s => s.signalType === "BUY") || [];
-  const sellSignals = signals?.filter(s => s.signalType === "SELL") || [];
+  // Filter signals by market status if enabled
+  const filterByMarketStatus = (signalList: typeof signals) => {
+    if (!hideClosedMarkets || !marketStatuses || !signalList) return signalList;
+    return signalList.filter(signal => {
+      const status = marketStatuses[signal.pair];
+      return status && status.isOpen;
+    });
+  };
+
+  const filteredSignals = filterByMarketStatus(signals);
+  const buySignals = filterByMarketStatus(signals?.filter(s => s.signalType === "BUY")) || [];
+  const sellSignals = filterByMarketStatus(signals?.filter(s => s.signalType === "SELL")) || [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50">
@@ -290,7 +304,8 @@ export default function Dashboard() {
 
         {/* Trading Signals */}
         <Tabs defaultValue="all" className="space-y-4">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+          <div className="flex items-center justify-between mb-4">
+            <TabsList className="grid w-full max-w-md grid-cols-3">
             <TabsTrigger value="all">
               All Signals ({signals?.length || 0})
             </TabsTrigger>
@@ -302,15 +317,29 @@ export default function Dashboard() {
             </TabsTrigger>
           </TabsList>
 
+            {/* Market Filter Toggle */}
+            <div className="flex items-center gap-2">
+              <Switch
+                id="hide-closed"
+                checked={hideClosedMarkets}
+                onCheckedChange={setHideClosedMarkets}
+              />
+              <Label htmlFor="hide-closed" className="flex items-center gap-2 cursor-pointer text-sm">
+                <Filter className="h-4 w-4" />
+                Hide Closed Markets
+              </Label>
+            </div>
+          </div>
+
           <TabsContent value="all" className="space-y-4">
             {signalsLoading ? (
               <div className="text-center py-12">
                 <RefreshCw className="h-8 w-8 animate-spin mx-auto text-orange-500" />
                 <p className="mt-4 text-muted-foreground">Loading signals...</p>
               </div>
-            ) : signals && signals.length > 0 ? (
+            ) : filteredSignals && filteredSignals.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {signals.map((signal) => (
+                {filteredSignals.map((signal) => (
                   <SignalCard key={signal.id} signal={signal} />
                 ))}
               </div>
