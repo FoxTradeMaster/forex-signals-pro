@@ -7,7 +7,9 @@ import { fetchForexData, fetchAllForexData, FOREX_PAIRS, ForexPairName } from ".
 import { getPairMarketStatus, isForexMarketOpen, getCurrentSessionName, formatTimeUntilOpen } from "./marketHours";
 import { SignalEngine } from "./signalEngine";
 import { MomentumWindowAnalyzer } from "./momentumWindow";
-import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist } from "./db";
+import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist, getDb, getUser } from "./db";
+import { users } from "../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 export const appRouter = router({
   system: systemRouter,
@@ -21,6 +23,68 @@ export const appRouter = router({
         success: true,
       } as const;
     }),
+  }),
+
+  subscription: router({
+    // Get current user's subscription status
+    getStatus: publicProcedure.query(async ({ ctx }) => {
+      // If not logged in, return free tier
+      if (!ctx.user) {
+        return { tier: "free" as const, isActive: false, expiry: null };
+      }
+      const user = await getUser(ctx.user.id);
+      if (!user) return { tier: "free" as const, isActive: false };
+
+      // Owner always has premium access
+      if (user.role === "admin") {
+        return { tier: "premium" as const, isActive: true, expiry: null };
+      }
+
+      // Check if subscription is active
+      const isActive = user.subscriptionTier === "premium" && 
+        user.subscriptionExpiry && 
+        new Date(user.subscriptionExpiry) > new Date();
+
+      return {
+        tier: user.subscriptionTier,
+        isActive,
+        expiry: user.subscriptionExpiry,
+      };
+    }),
+
+    // Upgrade to premium (called after payment)
+    upgrade: protectedProcedure
+      .input(z.object({ 
+        plan: z.enum(["monthly", "yearly"]),
+        paymentId: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        // Calculate expiry date
+        const now = new Date();
+        const expiry = new Date(now);
+        if (input.plan === "monthly") {
+          expiry.setMonth(expiry.getMonth() + 1);
+        } else {
+          expiry.setFullYear(expiry.getFullYear() + 1);
+        }
+
+        // Update user subscription
+        await db.update(users)
+          .set({
+            subscriptionTier: "premium",
+            subscriptionExpiry: expiry,
+          })
+          .where(eq(users.id, ctx.user.id));
+
+        return {
+          success: true,
+          expiry,
+          message: `Premium access activated until ${expiry.toLocaleDateString()}`,
+        };
+      }),
   }),
 
   // Forex data and signals

@@ -18,6 +18,13 @@ export default function Dashboard() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [hideClosedMarkets, setHideClosedMarkets] = useState(false);
 
+  // Check subscription status
+  const { data: subscriptionStatus } = trpc.subscription.getStatus.useQuery(undefined, {
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  const isPremium = subscriptionStatus?.isActive || false;
+
   // Fetch active signals
   const { data: signals, isLoading: signalsLoading, refetch: refetchSignals } = 
     trpc.signals.getActive.useQuery({ limit: 50 });
@@ -265,6 +272,17 @@ export default function Dashboard() {
               <RefreshCw className={`h-4 w-4 mr-2 ${generateSignals.isPending ? "animate-spin" : ""}`} />
               Generate Signals
             </Button>
+
+            {/* Upgrade Button for Free Users */}
+            {!isPremium && (
+              <Button
+                onClick={() => window.location.href = "/premium"}
+                variant="outline"
+                className="w-full border-orange-500 text-orange-600 hover:bg-orange-50"
+              >
+                🔒 Unlock All Pairs - Upgrade to Premium
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -409,7 +427,11 @@ export default function Dashboard() {
             ) : filteredSignals && filteredSignals.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {filteredSignals.map((signal) => (
-                  <SignalCard key={signal.id} signal={signal} />
+                  <SignalCard 
+                    key={signal.id} 
+                    signal={{ ...signal, reasoning: signal.reason }} 
+                    isPremium={isPremium}
+                  />
                 ))}
               </div>
             ) : (
@@ -430,7 +452,11 @@ export default function Dashboard() {
             {buySignals.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {buySignals.map((signal) => (
-                  <SignalCard key={signal.id} signal={signal} />
+                  <SignalCard 
+                    key={signal.id} 
+                    signal={{ ...signal, reasoning: signal.reason }} 
+                    isPremium={isPremium}
+                  />
                 ))}
               </div>
             ) : (
@@ -444,7 +470,11 @@ export default function Dashboard() {
             {sellSignals.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {sellSignals.map((signal) => (
-                  <SignalCard key={signal.id} signal={signal} />
+                  <SignalCard 
+                    key={signal.id} 
+                    signal={{ ...signal, reasoning: signal.reason }} 
+                    isPremium={isPremium}
+                  />
                 ))}
               </div>
             ) : (
@@ -454,6 +484,18 @@ export default function Dashboard() {
             )}
           </TabsContent>
         </Tabs>
+      </div>
+
+      {/* Legal Disclaimer */}
+      <div className="container py-8 mt-12 border-t">
+        <div className="max-w-4xl mx-auto">
+          <p className="text-xs text-muted-foreground text-center leading-relaxed">
+            <strong>Legal Disclaimer:</strong> Please be advised that there are no guarantees of profit, 
+            as past performance is not indicative of future results, and all trading involves significant risk. 
+            Factors such as market volatility, the limitations of algorithms, and the potential for loss, can occur and bots are tools and not a substitute for user experience and decision-making. 
+            The provider is not responsible for any financial losses and the Fox Trade Master bot is provided "as is" without warranties, all users should perform their own research and manage their own risk.
+          </p>
+        </div>
       </div>
     </div>
   );

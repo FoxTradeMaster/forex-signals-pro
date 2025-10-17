@@ -15,15 +15,14 @@ interface SignalCardProps {
     stopLoss: string;
     takeProfit: string;
     timeframe: string;
-    reason: string;
-    indicators: Record<string, number>;
-    createdAt: Date | string;
-    isActive: string;
+    reasoning: string;
+    createdAt: Date;
   };
   onDismiss?: (id: string) => void;
+  isPremium?: boolean; // Whether user has premium access
 }
 
-export function SignalCard({ signal, onDismiss }: SignalCardProps) {
+export function SignalCard({ signal, onDismiss, isPremium = false }: SignalCardProps) {
   const isBuy = signal.signalType === "BUY";
   const strength = parseInt(signal.strength);
   const isHighPriority = strength >= 7; // High priority signals get blinking alert
@@ -31,6 +30,9 @@ export function SignalCard({ signal, onDismiss }: SignalCardProps) {
   // Fetch market status for this pair
   const { data: marketStatus } = trpc.market.getPairStatus.useQuery({ pair: signal.pair });
   const isMarketClosed = marketStatus && !marketStatus.isOpen;
+
+  // Check if this pair is locked (not EUR/USD and user is not premium)
+  const isLocked = signal.pair !== "EUR/USD" && !isPremium;
 
   const strategyLabels: Record<string, string> = {
     swing: "Swing Trading",
@@ -126,41 +128,48 @@ export function SignalCard({ signal, onDismiss }: SignalCardProps) {
           </div>
         </div>
 
-        {/* Price Levels */}
-        <div className="grid grid-cols-3 gap-3 text-sm">
-          <div className="space-y-1">
-            <div className="text-muted-foreground">Entry Price</div>
-            <div className="font-semibold">{signal.entryPrice}</div>
-          </div>
-          <div className="space-y-1">
-            <div className="text-muted-foreground">Stop Loss</div>
-            <div className="font-semibold text-red-600">{signal.stopLoss}</div>
-          </div>
-          <div className="space-y-1">
-            <div className="text-muted-foreground">Take Profit</div>
-            <div className="font-semibold text-green-600">{signal.takeProfit}</div>
-          </div>
-        </div>
+                   <div className="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Entry Price</p>
+                  <p className={`font-mono font-semibold ${isLocked ? "blur-sm select-none" : ""}`}>
+                    {isLocked ? "X.XXXX" : signal.entryPrice}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Stop Loss</p>
+                  <p className={`font-mono font-semibold text-red-600 ${isLocked ? "blur-sm select-none" : ""}`}>
+                    {isLocked ? "X.XXXX" : signal.stopLoss}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Take Profit</p>
+                  <p className={`font-mono font-semibold text-green-600 ${isLocked ? "blur-sm select-none" : ""}`}>
+                    {isLocked ? "X.XXXX" : signal.takeProfit}
+                  </p>
+                </div>
+              </div>
+
+              {/* Premium Upsell for Locked Signals */}
+              {isLocked && (
+                <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                  <p className="text-sm text-orange-800 font-semibold mb-1">
+                    🔒 Premium Signal
+                  </p>
+                  <p className="text-xs text-orange-700">
+                    Upgrade to Premium to unlock all currency pairs and full signal details.
+                  </p>
+                </div>
+              )}
 
         {/* Reason */}
         <div className="pt-2 border-t">
           <div className="flex items-start gap-2">
             <TrendingUp className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
-            <p className="text-sm text-muted-foreground">{signal.reason}</p>
+            <p className="text-sm text-muted-foreground">{signal.reasoning}</p>
           </div>
         </div>
 
-        {/* Indicators */}
-        <div className="pt-2 border-t">
-          <div className="text-xs text-muted-foreground space-y-1">
-            {Object.entries(signal.indicators).map(([key, value]) => (
-              <div key={key} className="flex justify-between">
-                <span className="uppercase">{key}:</span>
-                <span className="font-mono">{typeof value === "number" ? value.toFixed(5) : value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+
 
         {/* Timestamp */}
         <div className="text-xs text-muted-foreground text-right">
