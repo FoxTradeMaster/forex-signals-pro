@@ -78,14 +78,27 @@ export default function Dashboard() {
     }
   }, [signals, lastSignalCount, playNotification]);
 
-  // Auto-refresh signals every 5 minutes
+  // Auto-refresh signals from database every 5 minutes
   useEffect(() => {
-    const interval = setInterval(() => {
+    const fetchInterval = setInterval(() => {
       refetchSignals();
-    }, 5 * 60 * 1000);
+    }, 5 * 60 * 1000); // 5 minutes
 
-    return () => clearInterval(interval);
+    return () => clearInterval(fetchInterval);
   }, [refetchSignals]);
+
+  // Auto-generate fresh signals every 15 minutes
+  useEffect(() => {
+    const autoGenerate = () => {
+      console.log("[FOX TRADE MASTER] Auto-generating fresh signals...");
+      toast.info("🔄 Auto-refreshing market analysis...", { duration: 3000 });
+      generateSignals.mutate();
+    };
+
+    const generateInterval = setInterval(autoGenerate, 15 * 60 * 1000); // 15 minutes
+
+    return () => clearInterval(generateInterval);
+  }, []);
 
   const handleGenerateSignals = () => {
     generateSignals.mutate();
@@ -113,6 +126,15 @@ export default function Dashboard() {
             </div>
 
             <div className="flex items-center gap-4">
+              {/* Auto-Refresh Status */}
+              <div className="text-xs text-muted-foreground flex flex-col items-end">
+                <div className="flex items-center gap-1">
+                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                  <span>Auto-refresh: ON</span>
+                </div>
+                <div className="text-[10px] mt-0.5">Fetch: 5min | Generate: 15min</div>
+              </div>
+
               {/* Last Updated */}
               {lastUpdated && (
                 <div className="text-sm text-muted-foreground">
