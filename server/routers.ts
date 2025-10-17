@@ -6,7 +6,7 @@ import { z } from "zod";
 import { fetchForexData, fetchAllForexData, FOREX_PAIRS, ForexPairName } from "./forexData";
 import { SignalEngine } from "./signalEngine";
 import { MomentumWindowAnalyzer } from "./momentumWindow";
-import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, addToWatchlist, removeFromWatchlist, getUserWatchlist } from "./db";
+import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist } from "./db";
 
 export const appRouter = router({
   system: systemRouter,
@@ -60,6 +60,9 @@ export const appRouter = router({
   signals: router({
     // Generate signals for all pairs
     generateAll: publicProcedure.mutation(async () => {
+      // Clear old signals first
+      await clearAllSignals();
+
       const forexData = await fetchAllForexData("1h", "5d");
       const engine = new SignalEngine();
       const signals = engine.generateMultipleSignals(forexData);
@@ -89,6 +92,9 @@ export const appRouter = router({
     generateForPair: publicProcedure
       .input(z.object({ pair: z.string() }))
       .mutation(async ({ input }) => {
+        // Clear old signals for this pair
+        await clearAllSignals();
+
         const forexData = await fetchForexData(input.pair as ForexPairName, "1h", "5d");
         if (!forexData) return [];
 

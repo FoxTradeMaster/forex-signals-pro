@@ -129,7 +129,21 @@ export function SignalCard({ signal, onDismiss }: SignalCardProps) {
 
         {/* Timestamp */}
         <div className="text-xs text-muted-foreground text-right">
-          {new Date(signal.createdAt).toLocaleString()}
+          <div>{new Date(signal.createdAt).toLocaleString()}</div>
+          <div className="text-[10px] mt-0.5">
+            {(() => {
+              const now = new Date();
+              const created = new Date(signal.createdAt);
+              const diffMs = now.getTime() - created.getTime();
+              const diffMins = Math.floor(diffMs / 60000);
+              const diffHours = Math.floor(diffMins / 60);
+              
+              if (diffMins < 1) return "Just now";
+              if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+              if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+              return `${Math.floor(diffHours / 24)} day${Math.floor(diffHours / 24) > 1 ? 's' : ''} ago`;
+            })()}
+          </div>
         </div>
       </CardContent>
     </Card>

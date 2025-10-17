@@ -15,6 +15,7 @@ import { toast } from "sonner";
 export default function Dashboard() {
   const { volume, setVolume, enabled, setEnabled, playNotification } = useAudioNotification();
   const [lastSignalCount, setLastSignalCount] = useState(0);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Fetch active signals
   const { data: signals, isLoading: signalsLoading, refetch: refetchSignals } = 
@@ -31,6 +32,7 @@ export default function Dashboard() {
   const generateSignals = trpc.signals.generateAll.useMutation({
     onSuccess: (newSignals) => {
       toast.success(`Generated ${newSignals.length} new trading signals!`);
+      setLastUpdated(new Date());
       refetchSignals();
     },
     onError: (error) => {
@@ -95,6 +97,13 @@ export default function Dashboard() {
             </div>
 
             <div className="flex items-center gap-4">
+              {/* Last Updated */}
+              {lastUpdated && (
+                <div className="text-sm text-muted-foreground">
+                  Last updated: {lastUpdated.toLocaleTimeString()}
+                </div>
+              )}
+
               {/* Audio Controls */}
               <Card className="p-3">
                 <div className="flex items-center gap-4">

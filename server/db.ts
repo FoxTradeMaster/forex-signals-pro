@@ -142,6 +142,13 @@ export async function deactivateSignal(signalId: string) {
     .where(eq(signals.id, signalId));
 }
 
+export async function clearAllSignals() {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.delete(signals);
+}
+
 // Watchlist management
 export async function addToWatchlist(userId: string, pair: string) {
   const db = await getDb();
