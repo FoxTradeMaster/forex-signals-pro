@@ -24,6 +24,10 @@ export default function Dashboard() {
     refetchOnWindowFocus: false,
   });
   const isPremium = subscriptionStatus?.isActive || false;
+  
+  // Debug: Log subscription status
+  console.log('Subscription Status:', subscriptionStatus);
+  console.log('isPremium:', isPremium);
 
   // Fetch active signals
   const { data: signals, isLoading: signalsLoading, refetch: refetchSignals } = 
@@ -203,6 +207,18 @@ export default function Dashboard() {
                 <RefreshCw className={`h-4 w-4 mr-2 ${generateSignals.isPending ? "animate-spin" : ""}`} />
                 Generate Signals
               </Button>
+
+              {/* Upgrade Button for Free Users */}
+              {!isPremium && (
+                <Button
+                  onClick={() => window.location.href = "/premium"}
+                  variant="outline"
+                  size="lg"
+                  className="border-orange-500 text-orange-600 hover:bg-orange-50"
+                >
+                  🔒 Upgrade to Premium
+                </Button>
+              )}
             </div>
           </div>
 
