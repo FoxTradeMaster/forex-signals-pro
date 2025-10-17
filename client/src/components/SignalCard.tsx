@@ -25,6 +25,7 @@ interface SignalCardProps {
 export function SignalCard({ signal, onDismiss }: SignalCardProps) {
   const isBuy = signal.signalType === "BUY";
   const strength = parseInt(signal.strength);
+  const isHighPriority = strength >= 7; // High priority signals get blinking alert
 
   const strategyLabels: Record<string, string> = {
     swing: "Swing Trading",
@@ -39,7 +40,18 @@ export function SignalCard({ signal, onDismiss }: SignalCardProps) {
   };
 
   return (
-    <Card className={`relative ${isBuy ? "border-l-4 border-l-green-500" : "border-l-4 border-l-red-500"}`}>
+    <Card className={`relative ${isBuy ? "border-l-4 border-l-green-500" : "border-l-4 border-l-red-500"} ${
+      isHighPriority ? "shadow-lg" : ""
+    }`}>
+      {/* Blinking Alert Indicator for High Priority Signals */}
+      {isHighPriority && (
+        <div className="absolute -top-1 -right-1 z-10">
+          <div className="relative flex h-4 w-4">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-orange-500"></span>
+          </div>
+        </div>
+      )}
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
@@ -51,6 +63,11 @@ export function SignalCard({ signal, onDismiss }: SignalCardProps) {
               <CardDescription className="flex items-center gap-2 mt-1">
                 <Badge variant="outline">{strategyLabels[signal.strategy]}</Badge>
                 <Badge variant="outline">{signal.timeframe}</Badge>
+                {isHighPriority && (
+                  <Badge className="bg-orange-500 text-white animate-pulse">
+                    🔥 HIGH PRIORITY
+                  </Badge>
+                )}
               </CardDescription>
             </div>
           </div>

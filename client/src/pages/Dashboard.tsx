@@ -45,16 +45,32 @@ export default function Dashboard() {
     if (signals && signals.length > lastSignalCount && lastSignalCount > 0) {
       const newSignals = signals.slice(0, signals.length - lastSignalCount);
       
-      // Play appropriate sound based on signal type
+      // Count high priority signals
+      let highPriorityCount = 0;
+      
+      // Play appropriate sound based on signal type and priority
       newSignals.forEach((signal) => {
-        if (signal.signalType === "BUY") {
-          playNotification("buy");
-        } else if (signal.signalType === "SELL") {
-          playNotification("sell");
+        const strength = parseInt(signal.strength);
+        const isHighPriority = strength >= 7;
+        
+        if (isHighPriority) {
+          highPriorityCount++;
+          // Play sound for high priority signals
+          if (signal.signalType === "BUY") {
+            playNotification("buy");
+          } else if (signal.signalType === "SELL") {
+            playNotification("sell");
+          }
         }
       });
 
-      toast.info(`${newSignals.length} new trading signal${newSignals.length > 1 ? 's' : ''} detected!`);
+      if (highPriorityCount > 0) {
+        toast.success(`🔥 ${highPriorityCount} HIGH PRIORITY signal${highPriorityCount > 1 ? 's' : ''} detected! (Strength 7+)`, {
+          duration: 5000,
+        });
+      } else {
+        toast.info(`${newSignals.length} new trading signal${newSignals.length > 1 ? 's' : ''} detected!`);
+      }
     }
     
     if (signals) {
