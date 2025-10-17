@@ -18,4 +18,37 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+/**
+ * Trading signals table - stores generated trading signals
+ */
+export const signals = mysqlTable("signals", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  pair: varchar("pair", { length: 20 }).notNull(), // e.g., EUR/USD
+  signalType: varchar("signalType", { length: 10 }).notNull(), // BUY, SELL, HOLD
+  strength: varchar("strength", { length: 10 }).notNull(), // 1-10
+  strategy: varchar("strategy", { length: 20 }).notNull(), // swing, day, trend
+  entryPrice: varchar("entryPrice", { length: 20 }).notNull(),
+  stopLoss: varchar("stopLoss", { length: 20 }).notNull(),
+  takeProfit: varchar("takeProfit", { length: 20 }).notNull(),
+  timeframe: varchar("timeframe", { length: 10 }).notNull(), // 15m, 1h, 4h, 1d
+  reason: text("reason").notNull(),
+  indicators: text("indicators").notNull(), // JSON string
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  isActive: varchar("isActive", { length: 5 }).default("true").notNull(), // true/false as string
+});
+
+export type Signal = typeof signals.$inferSelect;
+export type InsertSignal = typeof signals.$inferInsert;
+
+/**
+ * User watchlist - tracks which pairs users are monitoring
+ */
+export const watchlist = mysqlTable("watchlist", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  userId: varchar("userId", { length: 64 }).notNull(),
+  pair: varchar("pair", { length: 20 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Watchlist = typeof watchlist.$inferSelect;
+export type InsertWatchlist = typeof watchlist.$inferInsert;

@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, signals, InsertSignal, watchlist, InsertWatchlist } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -85,4 +85,89 @@ export async function getUser(id: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// Signal management
+export async function saveSignal(signal: InsertSignal) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot save signal: database not available");
+    return;
+  }
+
+  try {
+    await db.insert(signals).values(signal);
+  } catch (error) {
+    console.error("[Database] Failed to save signal:", error);
+    throw error;
+  }
+}
+
+export async function getActiveSignals(limit = 50) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get signals: database not available");
+    return [];
+  }
+
+  const result = await db
+    .select()
+    .from(signals)
+    .where(eq(signals.isActive, "true"))
+    .orderBy(signals.createdAt)
+    .limit(limit);
+
+  return result;
+}
+
+export async function getSignalsByPair(pair: string, limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const result = await db
+    .select()
+    .from(signals)
+    .where(eq(signals.pair, pair))
+    .orderBy(signals.createdAt)
+    .limit(limit);
+
+  return result;
+}
+
+export async function deactivateSignal(signalId: string) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db
+    .update(signals)
+    .set({ isActive: "false" })
+    .where(eq(signals.id, signalId));
+}
+
+// Watchlist management
+export async function addToWatchlist(userId: string, pair: string) {
+  const db = await getDb();
+  if (!db) return;
+
+  const id = `${userId}-${pair}-${Date.now()}`;
+  await db.insert(watchlist).values({ id, userId, pair });
+}
+
+export async function removeFromWatchlist(userId: string, pair: string) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db
+    .delete(watchlist)
+    .where(and(eq(watchlist.userId, userId), eq(watchlist.pair, pair)));
+}
+
+export async function getUserWatchlist(userId: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const result = await db
+    .select()
+    .from(watchlist)
+    .where(eq(watchlist.userId, userId));
+
+  return result;
+}
