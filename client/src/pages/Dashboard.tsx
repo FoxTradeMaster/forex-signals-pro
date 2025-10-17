@@ -126,7 +126,8 @@ export default function Dashboard() {
       {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="container py-4">
-          <div className="flex items-center justify-between">
+          {/* Desktop: Single row layout */}
+          <div className="hidden lg:flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white font-bold text-xl">
                 🦊
@@ -196,6 +197,74 @@ export default function Dashboard() {
                 Generate Signals
               </Button>
             </div>
+          </div>
+
+          {/* Mobile: Stacked layout */}
+          <div className="lg:hidden space-y-3">
+            {/* Logo and Title */}
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white font-bold text-lg">
+                🦊
+              </div>
+              <div>
+                <h1 className="text-lg font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                  FOX TRADE MASTER
+                </h1>
+                <p className="text-xs text-muted-foreground">Advanced Forex Trading Signals</p>
+              </div>
+            </div>
+
+            {/* Auto-Refresh Status & Last Updated */}
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1">
+                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span className="text-muted-foreground">Auto-refresh: ON</span>
+              </div>
+              {lastUpdated && (
+                <span className="text-muted-foreground">
+                  {lastUpdated.toLocaleTimeString()}
+                </span>
+              )}
+            </div>
+
+            {/* Audio Controls */}
+            <Card className="p-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="audio-enabled-mobile"
+                    checked={enabled}
+                    onCheckedChange={setEnabled}
+                  />
+                  <Label htmlFor="audio-enabled-mobile" className="flex items-center gap-1 cursor-pointer text-sm">
+                    {enabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                    Alerts
+                  </Label>
+                </div>
+                {enabled && (
+                  <div className="flex items-center gap-2 flex-1 max-w-[150px]">
+                    <Slider
+                      value={[volume * 100]}
+                      onValueChange={([val]) => setVolume(val / 100)}
+                      max={100}
+                      step={1}
+                      className="flex-1"
+                    />
+                    <span className="text-xs text-muted-foreground w-8">{Math.round(volume * 100)}%</span>
+                  </div>
+                )}
+              </div>
+            </Card>
+
+            {/* Generate Signals Button */}
+            <Button
+              onClick={handleGenerateSignals}
+              disabled={generateSignals.isPending}
+              className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${generateSignals.isPending ? "animate-spin" : ""}`} />
+              Generate Signals
+            </Button>
           </div>
         </div>
       </header>
