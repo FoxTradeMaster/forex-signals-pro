@@ -168,10 +168,10 @@ export default function Dashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Zap className="h-5 w-5 text-orange-500" />
-                24-Hour Momentum Windows (Jeffrey Turnmire Strategy)
+                24-Hour Momentum Windows
               </CardTitle>
               <CardDescription>
-                Optimal trading windows based on market sessions and momentum analysis
+                FOX TRADE MASTER proprietary session-based momentum analysis - Optimal trading windows based on market sessions and volatility patterns
               </CardDescription>
             </CardHeader>
             <CardContent>

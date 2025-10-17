@@ -1,7 +1,7 @@
 /**
  * 24-Hour Momentum Window Analyzer
  * Identifies optimal trading windows based on market sessions and momentum
- * Used by professional traders like Jeffrey Turnmire
+ * Advanced strategy for exploiting session overlaps and volatility patterns
  */
 
 import { OHLCData } from "./forexData";

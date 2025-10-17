@@ -458,7 +458,8 @@ class TrendFollowingStrategy {
 }
 
 /**
- * 24-Hour Momentum Strategy (Jeffrey Turnmire style)
+ * 24-Hour Momentum Strategy
+ * FOX TRADE MASTER proprietary session-based momentum analysis
  */
 class MomentumWindowStrategy {
   private analyzer = new MomentumWindowAnalyzer();
