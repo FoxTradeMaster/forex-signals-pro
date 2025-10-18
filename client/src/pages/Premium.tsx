@@ -2,7 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
-import { Check, Lock, Sparkles, Loader2 } from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
+import { Check, Lock, Sparkles, Loader2, LogIn } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import { useState } from "react";
@@ -10,6 +12,7 @@ import { useState } from "react";
 export default function Premium() {
   const [, setLocation] = useLocation();
   const [processingPlan, setProcessingPlan] = useState<"monthly" | "yearly" | null>(null);
+  const { isAuthenticated } = useAuth();
   
   const { data: subscriptionStatus } = trpc.subscription.getStatus.useQuery();
   
@@ -30,6 +33,13 @@ export default function Premium() {
   });
 
   const handleUpgrade = (plan: "monthly" | "yearly") => {
+    if (!isAuthenticated) {
+      toast.error("Please login first to purchase premium");
+      setTimeout(() => {
+        window.location.href = getLoginUrl();
+      }, 1500);
+      return;
+    }
     setProcessingPlan(plan);
     toast.info("Redirecting to PayPal...");
     createPaymentMutation.mutate({ plan });

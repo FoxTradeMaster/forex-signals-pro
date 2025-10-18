@@ -9,11 +9,14 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAudioNotification } from "@/hooks/useAudioNotification";
-import { RefreshCw, Volume2, VolumeX, TrendingUp, Clock, Zap, Filter } from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
+import { RefreshCw, Volume2, VolumeX, TrendingUp, Clock, Zap, Filter, LogIn, LogOut, User } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Dashboard() {
   const { volume, setVolume, enabled, setEnabled, playNotification } = useAudioNotification();
+  const { user, isAuthenticated, logout } = useAuth();
   const [lastSignalCount, setLastSignalCount] = useState(0);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [hideClosedMarkets, setHideClosedMarkets] = useState(false);
@@ -208,17 +211,45 @@ export default function Dashboard() {
                 Generate Signals
               </Button>
 
-              {/* Upgrade Button for Free Users */}
-              {!isPremium && (
-                <Button
-                  onClick={() => window.location.href = "/premium"}
-                  variant="outline"
-                  size="lg"
-                  className="border-orange-500 text-orange-600 hover:bg-orange-50"
-                >
-                  🔒 Upgrade to Premium
-                </Button>
-              )}
+              {/* Auth & Upgrade Buttons */}
+              <div className="flex items-center gap-2">
+                {isAuthenticated ? (
+                  <>
+                    <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg">
+                      <User className="h-4 w-4" />
+                      <span className="text-sm">{user?.name || user?.email || "User"}</span>
+                    </div>
+                    <Button
+                      onClick={() => logout()}
+                      variant="outline"
+                      size="lg"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    onClick={() => window.location.href = getLoginUrl()}
+                    variant="outline"
+                    size="lg"
+                  >
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Login
+                  </Button>
+                )}
+                
+                {!isPremium && (
+                  <Button
+                    onClick={() => window.location.href = "/premium"}
+                    variant="outline"
+                    size="lg"
+                    className="border-orange-500 text-orange-600 hover:bg-orange-50"
+                  >
+                    🔒 Upgrade to Premium
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -288,6 +319,33 @@ export default function Dashboard() {
               <RefreshCw className={`h-4 w-4 mr-2 ${generateSignals.isPending ? "animate-spin" : ""}`} />
               Generate Signals
             </Button>
+
+            {/* Auth Buttons */}
+            {isAuthenticated ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-center gap-2 px-3 py-2 bg-muted rounded-lg">
+                  <User className="h-4 w-4" />
+                  <span className="text-sm">{user?.name || user?.email || "User"}</span>
+                </div>
+                <Button
+                  onClick={() => logout()}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </div>
+            ) : (
+              <Button
+                onClick={() => window.location.href = getLoginUrl()}
+                variant="outline"
+                className="w-full"
+              >
+                <LogIn className="h-4 w-4 mr-2" />
+                Login
+              </Button>
+            )}
 
             {/* Upgrade Button for Free Users */}
             {!isPremium && (
