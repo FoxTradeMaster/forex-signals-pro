@@ -41,15 +41,26 @@ export const appRouter = router({
         return { tier: "premium" as const, isActive: true, expiry: null };
       }
 
-      // Check if subscription is active
-      const isActive = user.subscriptionTier === "premium" && 
-        user.subscriptionExpiry && 
-        new Date(user.subscriptionExpiry) > new Date();
+      // Check if subscription is expired
+      const now = new Date();
+      const isPremium = user.subscriptionTier === "premium";
+      const hasExpiry = user.subscriptionExpiry !== null;
+      const isExpired = hasExpiry && user.subscriptionExpiry && new Date(user.subscriptionExpiry) < now;
+      const isActive = isPremium && !isExpired;
+      
+      // Calculate days until expiry (or days since expiry if negative)
+      let daysUntilExpiry: number | null = null;
+      if (hasExpiry && user.subscriptionExpiry) {
+        const diffMs = new Date(user.subscriptionExpiry).getTime() - now.getTime();
+        daysUntilExpiry = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      }
 
       return {
-        tier: user.subscriptionTier,
+        tier: isActive ? "premium" : "free",
         isActive,
         expiry: user.subscriptionExpiry,
+        daysUntilExpiry,
+        isExpired: isPremium && isExpired,
       };
     }),
 

@@ -45,28 +45,37 @@ export default function Premium() {
     createPaymentMutation.mutate({ plan });
   };
 
-  if (subscriptionStatus?.isActive) {
+  // Show different message for active premium users
+  if (subscriptionStatus?.isActive && !subscriptionStatus?.isExpired) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 flex items-center justify-center p-4">
         <Card className="max-w-md">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Sparkles className="h-6 w-6 text-orange-500" />
-              <CardTitle>You're Premium!</CardTitle>
+              <CardTitle>Already Premium!</CardTitle>
             </div>
             <CardDescription>
-              You have full access to all FOX TRADE MASTER features.
+              You already have an active premium subscription.
+              {subscriptionStatus.expiry && (
+                <span className="block mt-2">
+                  Expires: {new Date(subscriptionStatus.expiry).toLocaleDateString()}
+                </span>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => setLocation("/")} className="w-full">
-              Back to Dashboard
+              Go to Dashboard
             </Button>
           </CardContent>
         </Card>
       </div>
     );
   }
+  
+  // Determine if this is a renewal or new subscription
+  const isRenewal = subscriptionStatus?.isExpired || false;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 py-12 px-4">
@@ -126,19 +135,19 @@ export default function Premium() {
                   <span>Auto-refresh every 15 minutes</span>
                 </li>
               </ul>
-              <Button 
+              <Button
                 onClick={() => handleUpgrade("monthly")}
                 disabled={processingPlan !== null}
-                className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
                 size="lg"
+                className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
               >
                 {processingPlan === "monthly" ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Processing...
                   </>
                 ) : (
-                  "Subscribe Monthly"
+                  isRenewal ? "Renew Monthly" : "Subscribe Monthly"
                 )}
               </Button>
             </CardContent>
@@ -203,7 +212,7 @@ export default function Premium() {
                     Processing...
                   </>
                 ) : (
-                  "Subscribe Yearly"
+                  isRenewal ? "Renew Yearly" : "Subscribe Yearly"
                 )}
               </Button>
             </CardContent>

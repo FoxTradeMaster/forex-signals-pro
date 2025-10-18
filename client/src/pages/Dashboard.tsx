@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { SignalCard } from "@/components/SignalCard";
+import { ExpiryBanner } from "@/components/ExpiryBanner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -362,6 +363,15 @@ export default function Dashboard() {
       </header>
 
       <div className="container py-6 space-y-6">
+        {/* Expiry Warning Banner */}
+        {subscriptionStatus && (subscriptionStatus.daysUntilExpiry !== undefined || subscriptionStatus.isExpired) && (
+          <ExpiryBanner
+            daysUntilExpiry={subscriptionStatus.daysUntilExpiry ?? null}
+            isExpired={subscriptionStatus.isExpired || false}
+            onRenew={() => window.location.href = "/premium"}
+          />
+        )}
+
         {/* Current Session Banner */}
         {currentSession && (
           <Card className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0">
