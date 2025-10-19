@@ -11,6 +11,7 @@ import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clear
 import { users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { createPayPalOrder, capturePayPalOrder } from "./paypal";
+import { sendWelcomeEmail } from "./email";
 
 export const appRouter = router({
   system: systemRouter,
@@ -110,6 +111,15 @@ export const appRouter = router({
             subscriptionExpiry: expiry,
           })
           .where(eq(users.id, ctx.user.id));
+
+        // Send welcome email with user guide
+        if (ctx.user.email) {
+          await sendWelcomeEmail(
+            ctx.user.email,
+            ctx.user.name || 'Trader',
+            input.plan
+          ).catch(err => console.error('[Payment] Failed to send welcome email:', err));
+        }
 
         return {
           success: true,
