@@ -52,3 +52,9 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Ensure all buttons visible without scrolling
 - [x] Test on different screen sizes
 - [x] Create final checkpoint
+
+## Phase 10: Fix Button URLs
+- [x] Update VPS button URL to https://www.forexvps.net/?aff=110088
+- [x] Update Book button URL to https://read.amazon.com/sample/B0FWZL9Z72?clientId=share
+- [x] Test both buttons
+- [x] Create final checkpoint

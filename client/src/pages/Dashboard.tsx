@@ -262,7 +262,7 @@ export default function Dashboard() {
 
               {/* VPS Button */}
               <Button
-                onClick={() => window.open('https://www.vultr.com/?ref=9608733-8H', '_blank')}
+                onClick={() => window.open('https://www.forexvps.net/?aff=110088', '_blank')}
                 size="lg"
                 variant="outline"
                 className="border-2"
@@ -273,7 +273,7 @@ export default function Dashboard() {
 
               {/* Mastering Forex Signals Book Button */}
               <Button
-                onClick={() => window.open('https://a.co/d/04BKKdt7', '_blank')}
+                onClick={() => window.open('https://read.amazon.com/sample/B0FWZL9Z72?clientId=share', '_blank')}
                 size="lg"
                 variant="outline"
                 className="border-2 border-green-500 text-green-700 hover:bg-green-50"
@@ -419,7 +419,7 @@ export default function Dashboard() {
             {/* VPS and Book Buttons */}
             <div className="grid grid-cols-2 gap-2">
               <Button
-                onClick={() => window.open('https://www.vultr.com/?ref=9608733-8H', '_blank')}
+                onClick={() => window.open('https://www.forexvps.net/?aff=110088', '_blank')}
                 variant="outline"
                 className="border-2"
               >
@@ -427,7 +427,7 @@ export default function Dashboard() {
                 VPS
               </Button>
               <Button
-                onClick={() => window.open('https://a.co/d/04BKKdt7', '_blank')}
+                onClick={() => window.open('https://read.amazon.com/sample/B0FWZL9Z72?clientId=share', '_blank')}
                 variant="outline"
                 className="border-2 border-green-500 text-green-700 hover:bg-green-50"
               >
