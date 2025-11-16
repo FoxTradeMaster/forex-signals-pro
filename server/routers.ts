@@ -3,7 +3,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
-import { fetchForexData, fetchAllForexData, FOREX_PAIRS, ForexPairName } from "./forexData";
+import { fetchForexData, fetchAllForexData, fetchForexDataForUser, getPairSymbolsForTier, isPairAvailableForTier } from "./forexDataPolygon";
 import { getPairMarketStatus, isForexMarketOpen, getCurrentSessionName, formatTimeUntilOpen } from "./marketHours";
 import { SignalEngine } from "./signalEngine";
 import { MomentumWindowAnalyzer } from "./momentumWindow";
@@ -136,7 +136,7 @@ export const appRouter = router({
   forex: router({
     // Get all supported pairs
     getPairs: publicProcedure.query(() => {
-      return Object.keys(FOREX_PAIRS);
+      return getPairSymbolsForTier('pro');
     }),
 
     // Get current price for a pair
@@ -148,7 +148,7 @@ export const appRouter = router({
       }))
       .query(async ({ input }) => {
         const data = await fetchForexData(
-          input.pair as ForexPairName,
+          input.pair,
           input.interval,
           input.range
         );
@@ -162,8 +162,8 @@ export const appRouter = router({
         range: z.enum(["1d", "5d", "1mo"]).optional(),
       }))
       .query(async ({ input }) => {
-        const data = await fetchAllForexData(input.interval, input.range);
-        return data;
+        const forexData = await fetchAllForexData("pro", input.interval, input.range);
+        return forexData;
       }),
   }),
 
@@ -173,7 +173,7 @@ export const appRouter = router({
       // Clear old signals first
       await clearAllSignals();
 
-      const forexData = await fetchAllForexData("1h", "5d");
+      const forexData = await fetchAllForexData("pro", "1h", "5d");
       const engine = new SignalEngine();
       const signals = engine.generateMultipleSignals(forexData);
 
@@ -205,7 +205,7 @@ export const appRouter = router({
         // Clear old signals for this pair
         await clearAllSignals();
 
-        const forexData = await fetchForexData(input.pair as ForexPairName, "1h", "5d");
+        const forexData = await fetchForexData(input.pair, "1h", "5d");
         if (!forexData) return [];
 
         const engine = new SignalEngine();
@@ -309,7 +309,7 @@ export const appRouter = router({
     getAllPairStatuses: publicProcedure.query(() => {
       const statuses: Record<string, any> = {};
       
-      for (const pair of Object.keys(FOREX_PAIRS)) {
+      for (const pair of getPairSymbolsForTier('pro')) {
         const status = getPairMarketStatus(pair);
         statuses[pair] = {
           ...status,
@@ -332,7 +332,7 @@ export const appRouter = router({
     analyze24Hour: publicProcedure
       .input(z.object({ pair: z.string() }))
       .query(async ({ input }) => {
-        const forexData = await fetchForexData(input.pair as ForexPairName, "1h", "5d");
+        const forexData = await fetchForexData(input.pair, "1h", "5d");
         if (!forexData) return [];
 
         const analyzer = new MomentumWindowAnalyzer();
@@ -349,7 +349,7 @@ export const appRouter = router({
 
     // Get all momentum windows for all pairs
     analyzeAll: publicProcedure.query(async () => {
-      const forexData = await fetchAllForexData("1h", "5d");
+      const forexData = await fetchAllForexData("pro", "1h", "5d");
       const analyzer = new MomentumWindowAnalyzer();
       
       const results = forexData.map(data => ({
