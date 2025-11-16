@@ -1,17 +1,22 @@
-import { mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { pgEnum, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
 /**
  * Core user table backing auth flow.
  * Extend this file with additional tables as your product grows.
  * Columns use camelCase to match both database fields and generated types.
  */
-export const users = mysqlTable("users", {
+
+// Define enums for PostgreSQL
+export const roleEnum = pgEnum("role", ["user", "admin"]);
+export const subscriptionTierEnum = pgEnum("subscriptionTier", ["free", "premium", "pro"]);
+
+export const users = pgTable("users", {
   id: varchar("id", { length: 64 }).primaryKey(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
-  subscriptionTier: mysqlEnum("subscriptionTier", ["free", "premium", "pro"]).default("free").notNull(),
+  role: roleEnum("role").default("user").notNull(),
+  subscriptionTier: subscriptionTierEnum("subscriptionTier").default("free").notNull(),
   subscriptionExpiry: timestamp("subscriptionExpiry"),
   createdAt: timestamp("createdAt").defaultNow(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow(),
@@ -23,7 +28,7 @@ export type InsertUser = typeof users.$inferInsert;
 /**
  * Trading signals table - stores generated trading signals
  */
-export const signals = mysqlTable("signals", {
+export const signals = pgTable("signals", {
   id: varchar("id", { length: 64 }).primaryKey(),
   pair: varchar("pair", { length: 20 }).notNull(), // e.g., EUR/USD
   signalType: varchar("signalType", { length: 10 }).notNull(), // BUY, SELL, HOLD
@@ -45,7 +50,7 @@ export type InsertSignal = typeof signals.$inferInsert;
 /**
  * User watchlist - tracks which pairs users are monitoring
  */
-export const watchlist = mysqlTable("watchlist", {
+export const watchlist = pgTable("watchlist", {
   id: varchar("id", { length: 64 }).primaryKey(),
   userId: varchar("userId", { length: 64 }).notNull(),
   pair: varchar("pair", { length: 20 }).notNull(),

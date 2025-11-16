@@ -1,0 +1,31 @@
+RENDER ENVIRONMENT VARIABLES - FOX TRADE MASTER™
+=================================================
+
+Copy and paste these into Render's Environment Variables section:
+
+NODE_VERSION=22.13.0
+PNPM_VERSION=10.4.1
+PAYPAL_MODE=live
+FROM_EMAIL=noreply@foxtrademaster.com
+VITE_APP_TITLE=FOX TRADE MASTER™
+VITE_APP_LOGO=/logo.svg
+OAUTH_SERVER_URL=https://api.manus.im
+VITE_OAUTH_PORTAL_URL=https://portal.manus.im
+OWNER_OPEN_ID=F5ojLEhTmxF5jMM9ABqVXj
+OWNER_NAME=Bob Fox
+VITE_APP_ID=nUPCPquCtcNSRrLkTXkaXo
+JWT_SECRET=39b227f48d9e65b0acb38ac1ec8de629fd3bf2ecdc3037f31d438b653c99a96d
+
+=================================================
+VARIABLES YOU NEED TO ADD WITH YOUR OWN VALUES:
+=================================================
+
+DATABASE_URL=[Paste your Render PostgreSQL Internal Database URL]
+POLYGON_API_KEY=[Your Polygon.io API key]
+PAYPAL_CLIENT_ID=[Your PayPal Client ID]
+PAYPAL_SECRET_KEY=[Your PayPal Secret Key]
+SENDGRID_API_KEY=[Your SendGrid API key]
+
+=================================================
+TOTAL: 17 environment variables
+=================================================
