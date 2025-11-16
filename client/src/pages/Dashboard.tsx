@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useAudioNotification } from "@/hooks/useAudioNotification";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import { RefreshCw, Volume2, VolumeX, TrendingUp, Clock, Zap, Filter, LogIn, LogOut, User } from "lucide-react";
+import { RefreshCw, Volume2, VolumeX, TrendingUp, Clock, Zap, Filter, LogIn, LogOut, User, Crown, Search, Server, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Dashboard() {
@@ -21,6 +21,7 @@ export default function Dashboard() {
   const [lastSignalCount, setLastSignalCount] = useState(0);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [hideClosedMarkets, setHideClosedMarkets] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Check subscription status
   const { data: subscriptionStatus } = trpc.subscription.getStatus.useQuery(undefined, {
@@ -28,10 +29,21 @@ export default function Dashboard() {
     refetchOnWindowFocus: false,
   });
   const isPremium = subscriptionStatus?.isActive || false;
+  const currentTier = subscriptionStatus?.tier || 'free';
+  const isPro = currentTier === 'pro';
+  
+  // Tier-based pair counts
+  const tierPairCounts = {
+    free: 1,
+    premium: 10,
+    pro: 156,
+  };
+  const availablePairs = tierPairCounts[currentTier as keyof typeof tierPairCounts] || 1;
   
   // Debug: Log subscription status
   console.log('Subscription Status:', subscriptionStatus);
-  console.log('isPremium:', isPremium);
+  console.log('Current Tier:', currentTier);
+  console.log('Available Pairs:', availablePairs);
 
   // Fetch active signals
   const { data: signals, isLoading: signalsLoading, refetch: refetchSignals } = 
@@ -109,7 +121,7 @@ export default function Dashboard() {
   // Auto-generate fresh signals every 15 minutes
   useEffect(() => {
     const autoGenerate = () => {
-      console.log("[FOX TRADE MASTER] Auto-generating fresh signals...");
+      console.log("[FOX TRADE MASTER™] Auto-generating fresh signals...");
       toast.info("🔄 Auto-refreshing market analysis...", { duration: 3000 });
       generateSignals.mutate();
     };
@@ -123,18 +135,34 @@ export default function Dashboard() {
     generateSignals.mutate();
   };
 
-  // Filter signals by market status if enabled
-  const filterByMarketStatus = (signalList: typeof signals) => {
-    if (!hideClosedMarkets || !marketStatuses || !signalList) return signalList;
-    return signalList.filter(signal => {
-      const status = marketStatuses[signal.pair];
-      return status && status.isOpen;
-    });
+  // Filter signals by market status and search query
+  const filterSignals = (signalList: typeof signals) => {
+    if (!signalList) return signalList;
+    
+    let filtered = signalList;
+    
+    // Filter by market status
+    if (hideClosedMarkets && marketStatuses) {
+      filtered = filtered.filter(signal => {
+        const status = marketStatuses[signal.pair];
+        return status && status.isOpen;
+      });
+    }
+    
+    // Filter by search query (Pro feature)
+    if (isPro && searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(signal => 
+        signal.pair.toLowerCase().includes(query)
+      );
+    }
+    
+    return filtered;
   };
 
-  const filteredSignals = filterByMarketStatus(signals);
-  const buySignals = filterByMarketStatus(signals?.filter(s => s.signalType === "BUY")) || [];
-  const sellSignals = filterByMarketStatus(signals?.filter(s => s.signalType === "SELL")) || [];
+  const filteredSignals = filterSignals(signals);
+  const buySignals = filterSignals(signals?.filter(s => s.signalType === "BUY")) || [];
+  const sellSignals = filterSignals(signals?.filter(s => s.signalType === "SELL")) || [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50">
@@ -148,10 +176,24 @@ export default function Dashboard() {
                 🦊
               </div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                  FOX TRADE MASTER
-                </h1>
-                <p className="text-sm text-muted-foreground">Advanced Forex Trading Signals</p>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                    FOX TRADE MASTER™
+                  </h1>
+                  {currentTier === 'pro' ? (
+                    <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                      <Crown className="h-3 w-3 mr-1" />
+                      PRO
+                    </Badge>
+                  ) : currentTier === 'premium' ? (
+                    <Badge className="bg-orange-500 text-white">PREMIUM</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-gray-600">FREE</Badge>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Advanced Forex Trading Signals • {availablePairs} Pair{availablePairs > 1 ? 's' : ''}
+                </p>
               </div>
             </div>
 
@@ -212,6 +254,28 @@ export default function Dashboard() {
                 Generate Signals
               </Button>
 
+              {/* VPS Button */}
+              <Button
+                onClick={() => window.open('https://www.vultr.com/?ref=9608733-8H', '_blank')}
+                size="lg"
+                variant="outline"
+                className="border-2"
+              >
+                <Server className="h-4 w-4 mr-2" />
+                VPS
+              </Button>
+
+              {/* Mastering Forex Signals Book Button */}
+              <Button
+                onClick={() => window.open('https://a.co/d/04BKKdt7', '_blank')}
+                size="lg"
+                variant="outline"
+                className="border-2 border-green-500 text-green-700 hover:bg-green-50"
+              >
+                <BookOpen className="h-4 w-4 mr-2" />
+                Mastering Forex Signals Book
+              </Button>
+
               {/* Auth & Upgrade Buttons */}
               <div className="flex items-center gap-2">
                 {isAuthenticated ? (
@@ -240,7 +304,7 @@ export default function Dashboard() {
                   </Button>
                 )}
                 
-                {!isPremium && (
+                {currentTier === 'free' && (
                   <Button
                     onClick={() => window.location.href = "/premium"}
                     variant="outline"
@@ -248,6 +312,17 @@ export default function Dashboard() {
                     className="border-orange-500 text-orange-600 hover:bg-orange-50"
                   >
                     🔒 Upgrade to Premium
+                  </Button>
+                )}
+                {currentTier === 'premium' && (
+                  <Button
+                    onClick={() => window.location.href = "/premium"}
+                    variant="outline"
+                    size="lg"
+                    className="border-purple-500 text-purple-600 hover:bg-purple-50"
+                  >
+                    <Crown className="h-4 w-4 mr-2" />
+                    Upgrade to Pro
                   </Button>
                 )}
               </div>
@@ -262,10 +337,24 @@ export default function Dashboard() {
                 🦊
               </div>
               <div>
-                <h1 className="text-lg font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                  FOX TRADE MASTER
-                </h1>
-                <p className="text-xs text-muted-foreground">Advanced Forex Trading Signals</p>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                    FOX TRADE MASTER™
+                  </h1>
+                  {currentTier === 'pro' ? (
+                    <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs">
+                      <Crown className="h-2 w-2 mr-1" />
+                      PRO
+                    </Badge>
+                  ) : currentTier === 'premium' ? (
+                    <Badge className="bg-orange-500 text-white text-xs">PREMIUM</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-gray-600 text-xs">FREE</Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {availablePairs} Pair{availablePairs > 1 ? 's' : ''}
+                </p>
               </div>
             </div>
 
@@ -321,6 +410,26 @@ export default function Dashboard() {
               Generate Signals
             </Button>
 
+            {/* VPS and Book Buttons */}
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                onClick={() => window.open('https://www.vultr.com/?ref=9608733-8H', '_blank')}
+                variant="outline"
+                className="border-2"
+              >
+                <Server className="h-4 w-4 mr-2" />
+                VPS
+              </Button>
+              <Button
+                onClick={() => window.open('https://a.co/d/04BKKdt7', '_blank')}
+                variant="outline"
+                className="border-2 border-green-500 text-green-700 hover:bg-green-50"
+              >
+                <BookOpen className="h-4 w-4 mr-1" />
+                Book
+              </Button>
+            </div>
+
             {/* Auth Buttons */}
             {isAuthenticated ? (
               <div className="space-y-2">
@@ -348,14 +457,24 @@ export default function Dashboard() {
               </Button>
             )}
 
-            {/* Upgrade Button for Free Users */}
-            {!isPremium && (
+            {/* Upgrade Buttons */}
+            {currentTier === 'free' && (
               <Button
                 onClick={() => window.location.href = "/premium"}
                 variant="outline"
                 className="w-full border-orange-500 text-orange-600 hover:bg-orange-50"
               >
-                🔒 Unlock All Pairs - Upgrade to Premium
+                🔒 Upgrade to Premium
+              </Button>
+            )}
+            {currentTier === 'premium' && (
+              <Button
+                onClick={() => window.location.href = "/premium"}
+                variant="outline"
+                className="w-full border-purple-500 text-purple-600 hover:bg-purple-50"
+              >
+                <Crown className="h-4 w-4 mr-2" />
+                Upgrade to Pro (156 Pairs)
               </Button>
             )}
           </div>
@@ -403,7 +522,7 @@ export default function Dashboard() {
                 24-Hour Momentum Windows
               </CardTitle>
               <CardDescription>
-                FOX TRADE MASTER proprietary session-based momentum analysis - Optimal trading windows based on market sessions and volatility patterns
+                FOX TRADE MASTER™ proprietary session-based momentum analysis - Optimal trading windows based on market sessions and volatility patterns
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -469,6 +588,38 @@ export default function Dashboard() {
                     );
                   })}
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Pro Search Bar */}
+        {isPro && (
+          <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <Search className="h-5 w-5 text-purple-600" />
+                <input
+                  type="text"
+                  placeholder="Search currency pairs (e.g., EUR/USD, GBP, JPY)..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 px-4 py-2 border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSearchQuery("")}
+                    className="text-purple-600"
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-purple-600 mt-2">
+                <Crown className="h-3 w-3 inline mr-1" />
+                Pro feature: Search across all 156 currency pairs
+              </p>
             </CardContent>
           </Card>
         )}

@@ -17,7 +17,7 @@ if (SENDGRID_API_KEY) {
 export async function sendWelcomeEmail(
   toEmail: string,
   userName: string,
-  subscriptionTier: 'monthly' | 'yearly'
+  subscriptionTier: 'monthly' | 'yearly' | 'pro_monthly' | 'pro_yearly'
 ): Promise<boolean> {
   if (!SENDGRID_API_KEY) {
     console.warn('[Email] SendGrid API key not configured, skipping email');
@@ -42,9 +42,36 @@ export async function sendWelcomeEmail(
       // Continue without guide URL
     }
 
-    const subscriptionText = subscriptionTier === 'monthly' 
-      ? 'Monthly ($99.95/month)' 
-      : 'Yearly ($1,000/year)';
+    let subscriptionText: string;
+    let tierName: string;
+    let pairCount: number;
+    
+    switch (subscriptionTier) {
+      case 'monthly':
+        subscriptionText = 'Premium Monthly ($99.95/month)';
+        tierName = 'Premium';
+        pairCount = 10;
+        break;
+      case 'yearly':
+        subscriptionText = 'Premium Yearly ($1,000/year)';
+        tierName = 'Premium';
+        pairCount = 10;
+        break;
+      case 'pro_monthly':
+        subscriptionText = 'Pro Monthly ($299/month)';
+        tierName = 'Pro';
+        pairCount = 156;
+        break;
+      case 'pro_yearly':
+        subscriptionText = 'Pro Yearly ($2,500/year)';
+        tierName = 'Pro';
+        pairCount = 156;
+        break;
+      default:
+        subscriptionText = 'Premium Monthly ($99.95/month)';
+        tierName = 'Premium';
+        pairCount = 10;
+    }
 
     const emailHtml = `
 <!DOCTYPE html>
@@ -123,14 +150,14 @@ export async function sendWelcomeEmail(
   <div class="content">
     <h2>Hi ${userName || 'Trader'},</h2>
     
-    <p>Thank you for subscribing to <strong>FOX TRADE MASTER Premium</strong>! You now have full access to all 10 currency pairs and our advanced trading signals.</p>
+    <p>Thank you for subscribing to <strong>FOX TRADE MASTER ${tierName}</strong>! You now have full access to all ${pairCount} currency pairs and our advanced trading signals.</p>
     
     <p><strong>Your Subscription:</strong> ${subscriptionText}</p>
     
     <div class="features">
       <h3>What You Get:</h3>
       <ul>
-        <li>All 10 major currency pairs unlocked</li>
+        <li>All ${pairCount} currency pairs unlocked ${pairCount === 156 ? '(28 major + 38 minor + 90 exotic)' : ''}</li>
         <li>4 advanced trading strategies (Swing, Day Trading, Trend Following, 24-Hour Momentum)</li>
         <li>Real-time signal generation every 15 minutes</li>
         <li>Audio & visual alerts for high-priority signals</li>
@@ -197,11 +224,11 @@ export async function sendWelcomeEmail(
     const msg = {
       to: toEmail,
       from: FROM_EMAIL,
-      subject: '🦊 Welcome to FOX TRADE MASTER Premium - Your User Guide Inside!',
+      subject: `🦊 Welcome to FOX TRADE MASTER ${tierName} - Your User Guide Inside!`,
       html: emailHtml,
-      text: `Welcome to FOX TRADE MASTER Premium!
+      text: `Welcome to FOX TRADE MASTER ${tierName}!
 
-Thank you for subscribing! You now have full access to all 10 currency pairs and advanced trading signals.
+Thank you for subscribing! You now have full access to all ${pairCount} currency pairs and advanced trading signals.
 
 Your Subscription: ${subscriptionText}
 

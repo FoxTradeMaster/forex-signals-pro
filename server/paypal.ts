@@ -1,10 +1,10 @@
 // @ts-ignore - No types available for this package
 import paypal from "@paypal/checkout-server-sdk";
 
-// PayPal credentials from environment
-const PAYPAL_CLIENT_ID = "AZUPU21PGTWxSvemHCa8Obai4PjqLq_JeCljq8bo3YljBClOgau2jwbndlZaGeqJNWctkrhWSiLMSLQS";
-const PAYPAL_SECRET_KEY = "EIgGWc8sM2odSjDtKcFWrhAffyMTzYGh7tGn5sCIYOiKHL2CNV2dchVyh_v1NuhXgIRZGuvY38agRpTg";
-const PAYPAL_MODE = "live"; // 'sandbox' or 'live'
+// PayPal credentials from environment variables
+const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || "";
+const PAYPAL_SECRET_KEY = process.env.PAYPAL_SECRET_KEY || "";
+const PAYPAL_MODE = process.env.PAYPAL_MODE || "sandbox"; // 'sandbox' or 'live'
 
 // Configure PayPal environment
 function environment() {
@@ -22,11 +22,31 @@ function client() {
 /**
  * Create a PayPal order for subscription payment
  */
-export async function createPayPalOrder(plan: "monthly" | "yearly") {
-  const amount = plan === "monthly" ? "99.95" : "1000.00";
-  const description = plan === "monthly" 
-    ? "FOX TRADE MASTER - Monthly Premium Subscription"
-    : "FOX TRADE MASTER - Yearly Premium Subscription (Save $199)";
+export async function createPayPalOrder(plan: "monthly" | "yearly" | "pro_monthly" | "pro_yearly") {
+  let amount: string;
+  let description: string;
+  
+  switch (plan) {
+    case "monthly":
+      amount = "99.95";
+      description = "FOX TRADE MASTER - Monthly Premium Subscription (10 Pairs)";
+      break;
+    case "yearly":
+      amount = "1000.00";
+      description = "FOX TRADE MASTER - Yearly Premium Subscription (10 Pairs, Save $199)";
+      break;
+    case "pro_monthly":
+      amount = "299.00";
+      description = "FOX TRADE MASTER - Monthly Pro Subscription (156 Pairs)";
+      break;
+    case "pro_yearly":
+      amount = "2500.00";
+      description = "FOX TRADE MASTER - Yearly Pro Subscription (156 Pairs, Save $1,088)";
+      break;
+    default:
+      amount = "99.95";
+      description = "FOX TRADE MASTER - Monthly Premium Subscription";
+  }
 
   const request = new paypal.orders.OrdersCreateRequest();
   request.prefer("return=representation");

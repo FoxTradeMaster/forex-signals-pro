@@ -37,17 +37,17 @@ export const appRouter = router({
       const user = await getUser(ctx.user.id);
       if (!user) return { tier: "free" as const, isActive: false };
 
-      // Owner always has premium access
+      // Owner always has pro access
       if (user.role === "admin") {
-        return { tier: "premium" as const, isActive: true, expiry: null };
+        return { tier: "pro" as const, isActive: true, expiry: null };
       }
 
       // Check if subscription is expired
       const now = new Date();
-      const isPremium = user.subscriptionTier === "premium";
+      const hasPaidTier = user.subscriptionTier === "premium" || user.subscriptionTier === "pro";
       const hasExpiry = user.subscriptionExpiry !== null;
       const isExpired = hasExpiry && user.subscriptionExpiry && new Date(user.subscriptionExpiry) < now;
-      const isActive = isPremium && !isExpired;
+      const isActive = hasPaidTier && !isExpired;
       
       // Calculate days until expiry (or days since expiry if negative)
       let daysUntilExpiry: number | null = null;
@@ -57,17 +57,17 @@ export const appRouter = router({
       }
 
       return {
-        tier: isActive ? "premium" : "free",
+        tier: isActive ? user.subscriptionTier : "free",
         isActive,
         expiry: user.subscriptionExpiry,
         daysUntilExpiry,
-        isExpired: isPremium && isExpired,
+        isExpired: hasPaidTier && isExpired,
       };
     }),
 
     // Create PayPal order for subscription
     createPayment: protectedProcedure
-      .input(z.object({ plan: z.enum(["monthly", "yearly"]) }))
+      .input(z.object({ plan: z.enum(["monthly", "yearly", "pro_monthly", "pro_yearly"]) }))
       .mutation(async ({ input }) => {
         const result = await createPayPalOrder(input.plan);
         if (!result.success) {
@@ -83,7 +83,7 @@ export const appRouter = router({
     capturePayment: protectedProcedure
       .input(z.object({ 
         orderId: z.string(),
-        plan: z.enum(["monthly", "yearly"]),
+        plan: z.enum(["monthly", "yearly", "pro_monthly", "pro_yearly"]),
       }))
       .mutation(async ({ ctx, input }) => {
         // Capture the PayPal payment
@@ -98,7 +98,9 @@ export const appRouter = router({
         // Calculate expiry date
         const now = new Date();
         const expiry = new Date(now);
-        if (input.plan === "monthly") {
+        const isPro = input.plan.startsWith('pro_');
+        
+        if (input.plan === "monthly" || input.plan === "pro_monthly") {
           expiry.setMonth(expiry.getMonth() + 1);
         } else {
           expiry.setFullYear(expiry.getFullYear() + 1);
@@ -107,7 +109,7 @@ export const appRouter = router({
         // Update user subscription
         await db.update(users)
           .set({
-            subscriptionTier: "premium",
+            subscriptionTier: isPro ? "pro" : "premium",
             subscriptionExpiry: expiry,
           })
           .where(eq(users.id, ctx.user.id));
@@ -125,7 +127,7 @@ export const appRouter = router({
           success: true,
           expiry,
           amount: captureResult.amount,
-          message: `Premium access activated until ${expiry.toLocaleDateString()}`,
+          message: `${isPro ? 'Pro' : 'Premium'} access activated until ${expiry.toLocaleDateString()}`,
         };
       }),
   }),
