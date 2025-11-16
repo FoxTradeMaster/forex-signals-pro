@@ -169,35 +169,37 @@ export default function Dashboard() {
       {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="container py-4">
-          {/* Desktop: Single row layout */}
-          <div className="hidden lg:flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white font-bold text-xl">
-                🦊
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                    FOX TRADE MASTER™
-                  </h1>
-                  {currentTier === 'pro' ? (
-                    <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                      <Crown className="h-3 w-3 mr-1" />
-                      PRO
-                    </Badge>
-                  ) : currentTier === 'premium' ? (
-                    <Badge className="bg-orange-500 text-white">PREMIUM</Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-gray-600">FREE</Badge>
-                  )}
+          {/* Desktop: Two-row layout */}
+          <div className="hidden lg:block">
+            {/* Row 1: Logo, Status, Audio */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white font-bold text-xl">
+                  🦊
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Advanced Forex Trading Signals • {availablePairs} Pair{availablePairs > 1 ? 's' : ''}
-                </p>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                      FOX TRADE MASTER™
+                    </h1>
+                    {currentTier === 'pro' ? (
+                      <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                        <Crown className="h-3 w-3 mr-1" />
+                        PRO
+                      </Badge>
+                    ) : currentTier === 'premium' ? (
+                      <Badge className="bg-orange-500 text-white">PREMIUM</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-gray-600">FREE</Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Advanced Forex Trading Signals • {availablePairs} Pair{availablePairs > 1 ? 's' : ''}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4">
               {/* Auto-Refresh Status */}
               <div className="text-xs text-muted-foreground flex flex-col items-end">
                 <div className="flex items-center gap-1">
@@ -243,7 +245,11 @@ export default function Dashboard() {
                   )}
                 </div>
               </Card>
+              </div>
+            </div>
 
+            {/* Row 2: Action Buttons */}
+            <div className="flex items-center justify-center gap-3">
               <Button
                 onClick={handleGenerateSignals}
                 disabled={generateSignals.isPending}
