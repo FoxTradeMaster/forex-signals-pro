@@ -102,3 +102,7 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Add routes for /activate and /auth/verify
 - [ ] Deploy authentication changes to Render
 - [ ] Test magic link emails in production
+
+## UI Improvements
+- [x] Update VPS button to use 🖥️ emoji instead of Lucide icon
+- [x] Update Mastering Forex Signals Book button to use 📚 emoji instead of Lucide icon

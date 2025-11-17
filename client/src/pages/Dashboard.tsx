@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useAudioNotification } from "@/hooks/useAudioNotification";
 // import { useAuth } from "@/_core/hooks/useAuth"; // Removed - no longer using auth
 // import { getLoginUrl } from "@/const"; // Removed - no longer using auth
-import { RefreshCw, Volume2, VolumeX, TrendingUp, Clock, Zap, Filter, Crown, Search, Server, BookOpen } from "lucide-react";
+import { RefreshCw, Volume2, VolumeX, TrendingUp, Clock, Zap, Filter, Crown, Search } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Dashboard() {
@@ -267,7 +267,7 @@ export default function Dashboard() {
                 variant="outline"
                 className="border-2"
               >
-                <Server className="h-4 w-4 mr-2" />
+                <span className="mr-2 text-lg">🖥️</span>
                 VPS
               </Button>
 
@@ -278,7 +278,7 @@ export default function Dashboard() {
                 variant="outline"
                 className="border-2 border-green-500 text-green-700 hover:bg-green-50"
               >
-                <BookOpen className="h-4 w-4 mr-2" />
+                <span className="mr-2 text-lg">📚</span>
                 Mastering Forex Signals Book
               </Button>
 
@@ -397,7 +397,7 @@ export default function Dashboard() {
                 variant="outline"
                 className="border-2"
               >
-                <Server className="h-4 w-4 mr-2" />
+                <span className="mr-2 text-lg">🖥️</span>
                 VPS
               </Button>
               <Button
@@ -405,7 +405,7 @@ export default function Dashboard() {
                 variant="outline"
                 className="border-2 border-green-500 text-green-700 hover:bg-green-50"
               >
-                <BookOpen className="h-4 w-4 mr-1" />
+                <span className="mr-1 text-lg">📚</span>
                 Book
               </Button>
             </div>
