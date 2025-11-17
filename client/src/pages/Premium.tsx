@@ -33,13 +33,7 @@ export default function Premium() {
   });
 
   const handleUpgrade = (plan: "monthly" | "yearly" | "pro_monthly" | "pro_yearly") => {
-    if (!isAuthenticated) {
-      toast.error("Please login first to purchase subscription");
-      setTimeout(() => {
-        window.location.href = getLoginUrl();
-      }, 1500);
-      return;
-    }
+    // Allow purchases without login - user will create account after payment
     setProcessingPlan(plan);
     toast.info("Redirecting to PayPal...");
     createPaymentMutation.mutate({ plan });
