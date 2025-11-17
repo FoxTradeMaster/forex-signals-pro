@@ -1,7 +1,7 @@
 import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { InsertUser, users, signals, InsertSignal, watchlist, InsertWatchlist } from "../drizzle/schema";
+import { InsertUser, users, signals, InsertSignal, watchlist, InsertWatchlist, payments, InsertPayment } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -182,4 +182,42 @@ export async function getUserWatchlist(userId: string) {
     .where(eq(watchlist.userId, userId));
 
   return result;
+}
+
+// Payment management
+export async function getPaymentByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(payments)
+    .where(eq(payments.email, email))
+    .orderBy(payments.createdAt)
+    .limit(1);
+
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function getPaymentByPayPalId(paypalPaymentId: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(payments)
+    .where(eq(payments.paypalPaymentId, paypalPaymentId))
+    .limit(1);
+
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function linkPaymentToUser(paymentId: string, userId: string) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db
+    .update(payments)
+    .set({ userId, updatedAt: new Date() })
+    .where(eq(payments.id, paymentId));
 }

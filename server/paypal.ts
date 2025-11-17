@@ -59,6 +59,7 @@ export async function createPayPalOrder(plan: "monthly" | "yearly" | "pro_monthl
           value: amount,
         },
         description,
+        custom_id: plan, // Pass plan info to webhook
       },
     ],
     application_context: {

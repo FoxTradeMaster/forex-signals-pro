@@ -15,6 +15,13 @@
       "when": 1763371503998,
       "tag": "0001_shocking_thor",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1763392495194,
+      "tag": "0002_shocking_miss_america",
+      "breakpoints": true
     }
   ]
 }

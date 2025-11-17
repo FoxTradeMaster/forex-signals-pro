@@ -7,7 +7,7 @@ import { fetchForexData, fetchAllForexData, fetchForexDataForUser, getPairSymbol
 import { getPairMarketStatus, isForexMarketOpen, getCurrentSessionName, formatTimeUntilOpen } from "./marketHours";
 import { SignalEngine } from "./signalEngine";
 import { MomentumWindowAnalyzer } from "./momentumWindow";
-import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist, getDb, getUser } from "./db";
+import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist, getDb, getUser, getPaymentByEmail, linkPaymentToUser } from "./db";
 import { users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { createPayPalOrder, capturePayPalOrder } from "./paypal";
@@ -105,6 +105,13 @@ export const appRouter = router({
               subscriptionExpiry: expiry,
               role: "user",
             });
+            
+            // Link any payment records to this user
+            const payment = await getPaymentByEmail(result.email);
+            if (payment) {
+              await linkPaymentToUser(payment.id, userId);
+              console.log(`[Magic Link] Linked payment ${payment.id} to user ${userId}`);
+            }
           }
           
           // Create session JWT

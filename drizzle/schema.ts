@@ -75,3 +75,24 @@ export const magicLinks = pgTable("magic_links", {
 
 export type MagicLink = typeof magicLinks.$inferSelect;
 export type InsertMagicLink = typeof magicLinks.$inferInsert;
+
+/**
+ * Payments table - stores PayPal payment records
+ */
+export const payments = pgTable("payments", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  paypalPaymentId: varchar("paypalPaymentId", { length: 128 }).notNull().unique(),
+  paypalPayerId: varchar("paypalPayerId", { length: 128 }),
+  email: varchar("email", { length: 320 }).notNull(),
+  amount: varchar("amount", { length: 20 }).notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("USD"),
+  plan: varchar("plan", { length: 20 }).notNull(), // monthly, yearly, pro_monthly, pro_yearly
+  tier: subscriptionTierEnum("tier").notNull(), // premium or pro
+  status: varchar("status", { length: 20 }).notNull(), // completed, pending, failed
+  userId: varchar("userId", { length: 64 }), // Set after user activates account
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type Payment = typeof payments.$inferSelect;
+export type InsertPayment = typeof payments.$inferInsert;

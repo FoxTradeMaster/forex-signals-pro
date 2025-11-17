@@ -128,3 +128,16 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [ ] Add VITE_APP_URL environment variable to Render
 - [ ] Deploy to Render
 - [ ] Test PayPal payment flow end-to-end
+
+## Phase 19: PayPal Webhook Integration - IN PROGRESS 🚧
+- [x] Create payments table in database schema
+- [x] Add database migration for payments table
+- [x] Create PayPal webhook endpoint (/api/paypal/webhook)
+- [x] Add webhook signature verification
+- [x] Handle PAYMENT.SALE.COMPLETED event
+- [x] Store payment records in database
+- [x] Link payment records to users when they activate via magic link
+- [x] Add custom_id field to PayPal orders to pass plan info
+- [ ] Deploy webhook to Render
+- [ ] Configure webhook URL in PayPal dashboard
+- [ ] Test production webhook
