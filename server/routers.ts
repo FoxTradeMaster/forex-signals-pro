@@ -173,8 +173,8 @@ export const appRouter = router({
       };
     }),
 
-    // Create PayPal order for subscription
-    createPayment: protectedProcedure
+    // Create PayPal order for subscription (allow anonymous payments)
+    createPayment: publicProcedure
       .input(z.object({ plan: z.enum(["monthly", "yearly", "pro_monthly", "pro_yearly"]) }))
       .mutation(async ({ input }) => {
         const result = await createPayPalOrder(input.plan);

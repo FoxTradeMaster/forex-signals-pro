@@ -112,3 +112,10 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Allow purchases without login
 - [ ] Deploy fix to Render
 - [ ] Test PayPal payment flow in production
+
+## Phase 17: Fix Backend Authentication Check - COMPLETE ✅
+- [x] Check subscription.createPayment mutation in routers.ts
+- [x] Remove authentication requirement from createPayment endpoint
+- [x] Allow anonymous PayPal payments
+- [ ] Deploy fix to Render
+- [ ] Test PayPal payment flow
