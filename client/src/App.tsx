@@ -9,6 +9,7 @@ import Premium from "./pages/Premium";
 import PremiumSuccess from "./pages/PremiumSuccess";
 import ActivateAccount from "./pages/ActivateAccount";
 import VerifyMagicLink from "./pages/VerifyMagicLink";
+import Admin from "./pages/Admin";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/premium/success" component={PremiumSuccess} />
       <Route path="/activate" component={ActivateAccount} />
       <Route path="/auth/verify" component={VerifyMagicLink} />
+      <Route path="/admin" component={Admin} />
       <Route path={" /404"} component={NotFound} />      {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>

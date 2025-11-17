@@ -141,3 +141,18 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [ ] Deploy webhook to Render
 - [ ] Configure webhook URL in PayPal dashboard
 - [ ] Test production webhook
+
+## Phase 20: Admin Dashboard - IN PROGRESS 🚧
+- [x] Create admin-only tRPC procedures for payment and user management
+- [x] Add getAllPayments endpoint
+- [x] Add getAllUsers endpoint
+- [x] Add manuallyGrantAccess endpoint
+- [x] Add updateUserSubscription endpoint
+- [x] Create Admin page component with navigation
+- [x] Build Payments table with search and filters
+- [x] Build Users table with subscription status
+- [x] Add manual access grant form
+- [x] Add payment reconciliation view
+- [x] Add admin button to Dashboard header (desktop and mobile)
+- [x] Test admin access control (admin role only)
+- [ ] Deploy admin dashboard

@@ -10,14 +10,13 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAudioNotification } from "@/hooks/useAudioNotification";
-// import { useAuth } from "@/_core/hooks/useAuth"; // Removed - no longer using auth
-// import { getLoginUrl } from "@/const"; // Removed - no longer using auth
+import { useAuth } from "@/_core/hooks/useAuth";
 import { RefreshCw, Volume2, VolumeX, TrendingUp, Clock, Zap, Filter, Crown, Search } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Dashboard() {
   const { volume, setVolume, enabled, setEnabled, playNotification } = useAudioNotification();
-  // const { user, isAuthenticated, logout } = useAuth(); // Removed - no longer using auth in header
+  const { user } = useAuth(); // Get user to check admin role
   const [lastSignalCount, setLastSignalCount] = useState(0);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [hideClosedMarkets, setHideClosedMarkets] = useState(false);
@@ -282,6 +281,18 @@ export default function Dashboard() {
                 Mastering Forex Signals Book
               </Button>
 
+              {/* Admin Button (only for admins) */}
+              {user?.role === 'admin' && (
+                <Button
+                  onClick={() => window.location.href = "/admin"}
+                  variant="outline"
+                  size="lg"
+                  className="border-red-500 text-red-600 hover:bg-red-50"
+                >
+                  ⚙️ Admin
+                </Button>
+              )}
+
               {/* Upgrade Buttons */}
               <div className="flex items-center gap-2">
                 {currentTier === 'free' && (
@@ -409,6 +420,17 @@ export default function Dashboard() {
                 Book
               </Button>
             </div>
+
+            {/* Admin Button (mobile, only for admins) */}
+            {user?.role === 'admin' && (
+              <Button
+                onClick={() => window.location.href = "/admin"}
+                variant="outline"
+                className="w-full border-red-500 text-red-600 hover:bg-red-50"
+              >
+                ⚙️ Admin Dashboard
+              </Button>
+            )}
 
             {/* Upgrade Buttons */}
             {currentTier === 'free' && (

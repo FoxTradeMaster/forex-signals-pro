@@ -221,3 +221,45 @@ export async function linkPaymentToUser(paymentId: string, userId: string) {
     .set({ userId, updatedAt: new Date() })
     .where(eq(payments.id, paymentId));
 }
+
+// Admin functions
+export async function getAllPayments() {
+  const db = await getDb();
+  if (!db) return [];
+
+  const result = await db
+    .select()
+    .from(payments)
+    .orderBy(payments.createdAt);
+
+  return result;
+}
+
+export async function getAllUsers() {
+  const db = await getDb();
+  if (!db) return [];
+
+  const result = await db
+    .select()
+    .from(users)
+    .orderBy(users.createdAt);
+
+  return result;
+}
+
+export async function updateUserSubscription(
+  userId: string, 
+  tier: "free" | "premium" | "pro", 
+  expiry: Date | null
+) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db
+    .update(users)
+    .set({ 
+      subscriptionTier: tier,
+      subscriptionExpiry: expiry,
+    })
+    .where(eq(users.id, userId));
+}

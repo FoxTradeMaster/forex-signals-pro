@@ -7,7 +7,7 @@ import { fetchForexData, fetchAllForexData, fetchForexDataForUser, getPairSymbol
 import { getPairMarketStatus, isForexMarketOpen, getCurrentSessionName, formatTimeUntilOpen } from "./marketHours";
 import { SignalEngine } from "./signalEngine";
 import { MomentumWindowAnalyzer } from "./momentumWindow";
-import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist, getDb, getUser, getPaymentByEmail, linkPaymentToUser } from "./db";
+import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist, getDb, getUser, getPaymentByEmail, linkPaymentToUser, getAllPayments, getAllUsers, updateUserSubscription } from "./db";
 import { users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { createPayPalOrder, capturePayPalOrder } from "./paypal";
@@ -475,6 +475,98 @@ export const appRouter = router({
 
       return results;
     }),
+  }),
+
+  // Admin-only operations
+  admin: router({
+    // Get all payments
+    getAllPayments: protectedProcedure.query(async ({ ctx }) => {
+      // Check if user is admin
+      const user = await getUser(ctx.user.id);
+      if (!user || user.role !== "admin") {
+        throw new Error("Unauthorized: Admin access required");
+      }
+      return await getAllPayments();
+    }),
+
+    // Get all users
+    getAllUsers: protectedProcedure.query(async ({ ctx }) => {
+      const user = await getUser(ctx.user.id);
+      if (!user || user.role !== "admin") {
+        throw new Error("Unauthorized: Admin access required");
+      }
+      return await getAllUsers();
+    }),
+
+    // Manually grant access to a user
+    grantAccess: protectedProcedure
+      .input(z.object({
+        email: z.string().email(),
+        tier: z.enum(["premium", "pro"]),
+        plan: z.enum(["monthly", "yearly", "pro_monthly", "pro_yearly"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUser(ctx.user.id);
+        if (!user || user.role !== "admin") {
+          throw new Error("Unauthorized: Admin access required");
+        }
+
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        // Check if user exists
+        const [existingUser] = await db
+          .select()
+          .from(users)
+          .where(eq(users.email, input.email))
+          .limit(1);
+
+        // Calculate expiry
+        const now = new Date();
+        const expiry = new Date(now);
+        if (input.plan === "monthly" || input.plan === "pro_monthly") {
+          expiry.setMonth(expiry.getMonth() + 1);
+        } else {
+          expiry.setFullYear(expiry.getFullYear() + 1);
+        }
+
+        if (existingUser) {
+          // Update existing user
+          await updateUserSubscription(existingUser.id, input.tier, expiry);
+          return { success: true, message: "Access granted to existing user", userId: existingUser.id };
+        } else {
+          // Create new user
+          const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          await db.insert(users).values({
+            id: userId,
+            email: input.email,
+            name: input.email.split('@')[0],
+            loginMethod: "manual_grant",
+            subscriptionTier: input.tier,
+            subscriptionExpiry: expiry,
+            role: "user",
+          });
+          return { success: true, message: "New user created with access", userId };
+        }
+      }),
+
+    // Update user subscription
+    updateSubscription: protectedProcedure
+      .input(z.object({
+        userId: z.string(),
+        tier: z.enum(["free", "premium", "pro"]),
+        expiryDate: z.string().nullable(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUser(ctx.user.id);
+        if (!user || user.role !== "admin") {
+          throw new Error("Unauthorized: Admin access required");
+        }
+
+        const expiry = input.expiryDate ? new Date(input.expiryDate) : null;
+        await updateUserSubscription(input.userId, input.tier, expiry);
+        return { success: true, message: "Subscription updated" };
+      }),
   }),
 });
 
