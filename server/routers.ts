@@ -12,6 +12,10 @@ import { users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { createPayPalOrder, capturePayPalOrder } from "./paypal";
 import { sendWelcomeEmail } from "./email";
+import { createMagicLink, verifyMagicLink } from "./_core/magicLink";
+import { sendMagicLinkEmail } from "./_core/sendMagicLinkEmail";
+import jwt from "jsonwebtoken";
+import { ENV } from "./_core/env";
 
 export const appRouter = router({
   system: systemRouter,
@@ -25,6 +29,110 @@ export const appRouter = router({
         success: true,
       } as const;
     }),
+    
+    // Request magic link (after PayPal payment)
+    requestMagicLink: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        tier: z.enum(["premium", "pro"]),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          // Create magic link token
+          const token = await createMagicLink(input.email, input.tier);
+          
+          // Send email
+          const emailSent = await sendMagicLinkEmail(input.email, token, input.tier);
+          
+          if (!emailSent) {
+            throw new Error("Failed to send magic link email");
+          }
+          
+          return { success: true, message: "Magic link sent to your email" };
+        } catch (error) {
+          console.error("[Magic Link] Error:", error);
+          throw new Error("Failed to send magic link");
+        }
+      }),
+    
+    // Verify magic link and create session
+    verifyMagicLink: publicProcedure
+      .input(z.object({
+        token: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          // Verify token
+          const result = await verifyMagicLink(input.token);
+          
+          if (!result) {
+            throw new Error("Invalid or expired magic link");
+          }
+          
+          // Create or update user
+          const db = await getDb();
+          if (!db) throw new Error("Database not available");
+          
+          const userId = `user_${Date.now()}_${result.email.split('@')[0]}`;
+          const expiry = new Date();
+          expiry.setMonth(expiry.getMonth() + 1); // 1 month subscription
+          
+          // Check if user exists
+          const [existingUser] = await db
+            .select()
+            .from(users)
+            .where(eq(users.email, result.email))
+            .limit(1);
+          
+          if (existingUser) {
+            // Update existing user
+            await db
+              .update(users)
+              .set({
+                subscriptionTier: result.tier,
+                subscriptionExpiry: expiry,
+                lastSignedIn: new Date(),
+              })
+              .where(eq(users.id, existingUser.id));
+          } else {
+            // Create new user
+            await db.insert(users).values({
+              id: userId,
+              email: result.email,
+              name: result.email.split('@')[0],
+              loginMethod: "magic_link",
+              subscriptionTier: result.tier,
+              subscriptionExpiry: expiry,
+              role: "user",
+            });
+          }
+          
+          // Create session JWT
+          const user = existingUser || { id: userId, email: result.email, name: result.email.split('@')[0], role: "user" };
+          const sessionToken = jwt.sign(
+            { userId: user.id, email: user.email, name: user.name, role: user.role },
+            ENV.cookieSecret,
+            { expiresIn: "30d" }
+          );
+          
+          // Set session cookie
+          const cookieOptions = getSessionCookieOptions(ctx.req);
+          ctx.res.cookie(COOKIE_NAME, sessionToken, cookieOptions);
+          
+          return { 
+            success: true, 
+            user: { 
+              id: user.id, 
+              email: user.email, 
+              name: user.name,
+              tier: result.tier 
+            } 
+          };
+        } catch (error) {
+          console.error("[Magic Link Verify] Error:", error);
+          throw new Error("Failed to verify magic link");
+        }
+      }),
   }),
 
   subscription: router({

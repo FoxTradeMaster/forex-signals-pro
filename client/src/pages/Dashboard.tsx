@@ -10,14 +10,14 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAudioNotification } from "@/hooks/useAudioNotification";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
-import { RefreshCw, Volume2, VolumeX, TrendingUp, Clock, Zap, Filter, LogIn, LogOut, User, Crown, Search, Server, BookOpen } from "lucide-react";
+// import { useAuth } from "@/_core/hooks/useAuth"; // Removed - no longer using auth
+// import { getLoginUrl } from "@/const"; // Removed - no longer using auth
+import { RefreshCw, Volume2, VolumeX, TrendingUp, Clock, Zap, Filter, Crown, Search, Server, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Dashboard() {
   const { volume, setVolume, enabled, setEnabled, playNotification } = useAudioNotification();
-  const { user, isAuthenticated, logout } = useAuth();
+  // const { user, isAuthenticated, logout } = useAuth(); // Removed - no longer using auth in header
   const [lastSignalCount, setLastSignalCount] = useState(0);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [hideClosedMarkets, setHideClosedMarkets] = useState(false);
@@ -282,34 +282,8 @@ export default function Dashboard() {
                 Mastering Forex Signals Book
               </Button>
 
-              {/* Auth & Upgrade Buttons */}
+              {/* Upgrade Buttons */}
               <div className="flex items-center gap-2">
-                {isAuthenticated ? (
-                  <>
-                    <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg">
-                      <User className="h-4 w-4" />
-                      <span className="text-sm">{user?.name || user?.email || "User"}</span>
-                    </div>
-                    <Button
-                      onClick={() => logout()}
-                      variant="outline"
-                      size="lg"
-                    >
-                      <LogOut className="h-4 w-4 mr-2" />
-                      Logout
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    onClick={() => window.location.href = getLoginUrl()}
-                    variant="outline"
-                    size="lg"
-                  >
-                    <LogIn className="h-4 w-4 mr-2" />
-                    Login
-                  </Button>
-                )}
-                
                 {currentTier === 'free' && (
                   <Button
                     onClick={() => window.location.href = "/premium"}
@@ -435,33 +409,6 @@ export default function Dashboard() {
                 Book
               </Button>
             </div>
-
-            {/* Auth Buttons */}
-            {isAuthenticated ? (
-              <div className="space-y-2">
-                <div className="flex items-center justify-center gap-2 px-3 py-2 bg-muted rounded-lg">
-                  <User className="h-4 w-4" />
-                  <span className="text-sm">{user?.name || user?.email || "User"}</span>
-                </div>
-                <Button
-                  onClick={() => logout()}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </Button>
-              </div>
-            ) : (
-              <Button
-                onClick={() => window.location.href = getLoginUrl()}
-                variant="outline"
-                className="w-full"
-              >
-                <LogIn className="h-4 w-4 mr-2" />
-                Login
-              </Button>
-            )}
 
             {/* Upgrade Buttons */}
             {currentTier === 'free' && (

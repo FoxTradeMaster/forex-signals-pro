@@ -7,6 +7,8 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Dashboard from "./pages/Dashboard";
 import Premium from "./pages/Premium";
 import PremiumSuccess from "./pages/PremiumSuccess";
+import ActivateAccount from "./pages/ActivateAccount";
+import VerifyMagicLink from "./pages/VerifyMagicLink";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -15,6 +17,8 @@ function Router() {
       <Route path={"/"} component={Dashboard} />
       <Route path="/premium" component={Premium} />
       <Route path="/premium/success" component={PremiumSuccess} />
+      <Route path="/activate" component={ActivateAccount} />
+      <Route path="/auth/verify" component={VerifyMagicLink} />
       <Route path={" /404"} component={NotFound} />      {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>
