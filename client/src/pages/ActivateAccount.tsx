@@ -11,9 +11,19 @@ export default function ActivateAccount() {
   const [tier, setTier] = useState<"premium" | "pro">("premium");
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  // Get tier from URL params
+  // Get tier from URL params (from PayPal return)
   useState(() => {
     const params = new URLSearchParams(window.location.search);
+    const planParam = params.get("plan");
+    
+    // Convert plan to tier
+    if (planParam === "pro_monthly" || planParam === "pro_yearly") {
+      setTier("pro");
+    } else if (planParam === "monthly" || planParam === "yearly") {
+      setTier("premium");
+    }
+    
+    // Also support direct tier parameter
     const tierParam = params.get("tier");
     if (tierParam === "premium" || tierParam === "pro") {
       setTier(tierParam);

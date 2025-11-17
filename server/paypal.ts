@@ -65,7 +65,7 @@ export async function createPayPalOrder(plan: "monthly" | "yearly" | "pro_monthl
       brand_name: "FOX TRADE MASTER",
       landing_page: "BILLING",
       user_action: "PAY_NOW",
-      return_url: `${process.env.VITE_APP_URL || "http://localhost:3000"}/premium/success`,
+      return_url: `${process.env.VITE_APP_URL || "http://localhost:3000"}/activate?plan=${plan}`,
       cancel_url: `${process.env.VITE_APP_URL || "http://localhost:3000"}/premium`,
     },
   });

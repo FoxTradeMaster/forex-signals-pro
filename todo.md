@@ -119,3 +119,12 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Allow anonymous PayPal payments
 - [ ] Deploy fix to Render
 - [ ] Test PayPal payment flow
+
+## Phase 18: Configure PayPal Return URL - COMPLETE ✅
+- [x] Find PayPal integration code in server files
+- [x] Add return_url parameter pointing to /activate page with plan parameter
+- [x] Update ActivateAccount page to handle plan parameter from PayPal
+- [x] Cancel_url already configured to /premium
+- [ ] Add VITE_APP_URL environment variable to Render
+- [ ] Deploy to Render
+- [ ] Test PayPal payment flow end-to-end
