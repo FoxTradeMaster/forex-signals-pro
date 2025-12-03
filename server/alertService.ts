@@ -179,28 +179,76 @@ async function triggerAlert(params: {
 
   console.log(`[AlertService] Triggering alert: ${message}`);
 
-  // For now, notify the owner (admin)
-  // In a full implementation, this would:
-  // 1. Get all users with this signal in their watchlist
-  // 2. Check their alert preferences
-  // 3. Send browser/email notifications based on preferences
+  // Get all users with alert preferences for this alert type
+  const { getUserAlertPreferences, getUser } = await import("./db");
+  const { sendPushNotification } = await import("./pushNotificationService");
   
   try {
+    // Notify the owner (admin)
     await notifyOwner({
       title: `Signal Alert: ${pair} ${signalType}`,
       content: message,
     });
 
-    // Log the alert (using a placeholder userId for now)
-    await logAlert({
-      userId: "system",
-      signalId,
-      alertType,
-      channel: "both",
-      message,
-      plDollars: plDollars.toFixed(2),
-      plPercentage: plPercentage.toFixed(2),
-    });
+    // In production, get all users with this signal and their alert preferences
+    // For now, we'll send to all users with this alert type enabled
+    // This is a simplified implementation - in production you'd filter by watchlist
+    
+    // Get all users (in production, filter by those who have this signal)
+    const db = await import("./db").then(m => m.getDb());
+    if (db) {
+      const { users: usersTable } = await import("../drizzle/schema");
+      const allUsers = await db.select().from(usersTable);
+      
+      for (const user of allUsers) {
+        if (!user.id) continue;
+        // Get user's alert preferences
+        const prefs = await getUserAlertPreferences(user.id);
+        const pref = prefs.find(p => p.alertType === alertType && p.isEnabled);
+        
+        if (pref) {
+          // Send email if channel includes email
+          if (pref.channel === "email" || pref.channel === "both") {
+            if (user.email) {
+              await sendAlertEmail({
+                email: user.email,
+                name: user.name || "Trader",
+                pair,
+                signalType,
+                alertType,
+                plDollars,
+                plPercentage,
+                currentPrice,
+              });
+            }
+          }
+          
+          // Send push notification if channel includes browser
+          if (pref.channel === "browser" || pref.channel === "both") {
+            await sendPushNotification(user.id, {
+              title: `${emoji} ${alertType === "profit_target" ? "Profit Target Hit" : alertType === "stop_loss" ? "Stop Loss Hit" : alertType === "percent_gain" ? "Profit Alert" : "Loss Alert"}`,
+              body: `${pair} ${signalType}: ${plDollars >= 0 ? "+" : ""}$${plDollars.toFixed(2)} (${plPercentage >= 0 ? "+" : ""}${plPercentage.toFixed(2)}%)`,
+              tag: `signal-${signalId}-${alertType}`,
+              requireInteraction: true,
+              url: "/",
+              signalId,
+              alertType,
+            });
+          }
+          
+          // Log the alert
+          await logAlert({
+            userId: user.id,
+            signalId,
+            alertType,
+            channel: pref.channel,
+            message,
+            plDollars: plDollars.toFixed(2),
+            plPercentage: plPercentage.toFixed(2),
+          });
+        }
+      }
+    }
 
   } catch (error) {
     console.error("[AlertService] Error sending alert:", error);

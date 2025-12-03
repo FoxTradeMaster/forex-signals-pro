@@ -772,6 +772,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const { sendAlertEmail } = await import("./alertService");
+        const { sendPushNotification } = await import("./pushNotificationService");
         const user = await getUser(ctx.user.id);
         
         if (!user || !user.email) {
@@ -791,12 +792,62 @@ export const appRouter = router({
           });
         }
 
+        if (input.channel === "browser" || input.channel === "both") {
+          await sendPushNotification(ctx.user.id, {
+            title: "🎯 Test Alert - FOX TRADE MASTER™",
+            body: "EUR/USD BUY signal hit profit target: +$125.50 (+2.5%)",
+            tag: "test-alert",
+            requireInteraction: false,
+          });
+        }
+
         return { 
           success: true, 
           message: "Test alert sent successfully",
           channel: input.channel,
         };
       }),
+
+    // Subscribe to push notifications
+    subscribePush: protectedProcedure
+      .input(z.object({
+        subscription: z.object({
+          endpoint: z.string(),
+          keys: z.object({
+            p256dh: z.string(),
+            auth: z.string(),
+          }),
+        }),
+        deviceName: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { createPushSubscription } = await import("./db");
+        const id = await createPushSubscription({
+          userId: ctx.user.id,
+          endpoint: input.subscription.endpoint,
+          p256dh: input.subscription.keys.p256dh,
+          auth: input.subscription.keys.auth,
+          deviceName: input.deviceName,
+        });
+        return { success: !!id, id };
+      }),
+
+    // Unsubscribe from push notifications
+    unsubscribePush: protectedProcedure
+      .input(z.object({
+        endpoint: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { deletePushSubscription } = await import("./db");
+        const success = await deletePushSubscription(ctx.user.id, input.endpoint);
+        return { success };
+      }),
+
+    // Get VAPID public key for push subscription
+    getVapidPublicKey: publicProcedure.query(() => {
+      const { getVapidPublicKey } = require("./pushNotificationService");
+      return { publicKey: getVapidPublicKey() };
+    }),
   }),
 
   // Trade Journal - Manual trade tracking

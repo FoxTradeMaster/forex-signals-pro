@@ -1,3 +1,4 @@
+import React from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,14 +8,100 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { Bell, Mail, Monitor, TrendingUp, TrendingDown, Target, AlertTriangle, ArrowLeft, TestTube } from "lucide-react";
+import { Bell, Mail, Monitor, TrendingUp, TrendingDown, Target, AlertTriangle, ArrowLeft, TestTube, HelpCircle } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
 import { toast } from "sonner";
+import { driver } from "driver.js";
+import "driver.js/dist/driver.css";
 
 export default function AlertSettings() {
   const { user, loading, isAuthenticated } = useAuth();
   const [testingAlert, setTestingAlert] = useState(false);
+  const [pushSupported, setPushSupported] = useState(false);
+  const [pushPermission, setPushPermission] = useState<NotificationPermission>("default");
+  const [subscribingPush, setSubscribingPush] = useState(false);
+
+  // Check if push notifications are supported
+  React.useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window && "serviceWorker" in navigator) {
+      setPushSupported(true);
+      setPushPermission(Notification.permission);
+    }
+  }, []);
+
+  // Onboarding tutorial
+  const startTutorial = () => {
+    const driverObj = driver({
+      showProgress: true,
+      steps: [
+        {
+          element: "#push-notification-card",
+          popover: {
+            title: "Enable Push Notifications",
+            description: "Click here to enable browser push notifications. You'll receive instant alerts even when the site is closed. Works on desktop and mobile browsers.",
+            side: "bottom",
+            align: "start",
+          },
+        },
+        {
+          element: "#alert-type-profit-target",
+          popover: {
+            title: "Profit Target Alerts",
+            description: "Get notified when a signal reaches its take profit level. No threshold needed - alerts trigger automatically when the target is hit.",
+            side: "bottom",
+            align: "start",
+          },
+        },
+        {
+          element: "#alert-type-stop-loss",
+          popover: {
+            title: "Stop Loss Alerts",
+            description: "Get notified when a signal hits its stop loss level. Helps you manage risk and exit losing trades quickly.",
+            side: "bottom",
+            align: "start",
+          },
+        },
+        {
+          element: "#alert-type-percent-gain",
+          popover: {
+            title: "Percentage Gain Alerts",
+            description: "Set a custom threshold (e.g., 2.5%) to get notified when a signal gains that percentage. Great for taking partial profits.",
+            side: "bottom",
+            align: "start",
+          },
+        },
+        {
+          element: "#alert-type-percent-loss",
+          popover: {
+            title: "Percentage Loss Alerts",
+            description: "Set a custom threshold (e.g., 1.5%) to get notified when a signal loses that percentage. Helps you cut losses early.",
+            side: "bottom",
+            align: "start",
+          },
+        },
+        {
+          element: "#alert-channel-select",
+          popover: {
+            title: "Alert Channels",
+            description: "Choose how you want to receive alerts: Browser (push notifications), Email, or Both. Browser alerts are instant, while email is reliable for all devices.",
+            side: "left",
+            align: "start",
+          },
+        },
+        {
+          element: "#test-alert-button",
+          popover: {
+            title: "Test Your Alerts",
+            description: "Click here to send a test alert and verify your notification settings are working correctly.",
+            side: "bottom",
+            align: "end",
+          },
+        },
+      ],
+    });
+    driverObj.drive();
+  };
 
   // Fetch alert preferences
   const { data: preferences, isLoading: loadingPrefs, refetch } = trpc.alerts.getPreferences.useQuery(
@@ -70,9 +157,80 @@ export default function AlertSettings() {
     },
   });
 
+  const subscribePush = trpc.alerts.subscribePush.useMutation({
+    onSuccess: () => {
+      toast.success("Push notifications enabled!");
+      setSubscribingPush(false);
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to enable push notifications: ${error.message}`);
+      setSubscribingPush(false);
+    },
+  });
+
+  const { data: vapidData } = trpc.alerts.getVapidPublicKey.useQuery();
+
   const handleTestAlert = async (channel: "browser" | "email" | "both") => {
     setTestingAlert(true);
     await testAlert.mutateAsync({ channel });
+  };
+
+  const handleEnablePushNotifications = async () => {
+    if (!pushSupported) {
+      toast.error("Push notifications are not supported in your browser");
+      return;
+    }
+
+    setSubscribingPush(true);
+
+    try {
+      // Request notification permission
+      const permission = await Notification.requestPermission();
+      setPushPermission(permission);
+
+      if (permission !== "granted") {
+        toast.error("Notification permission denied");
+        setSubscribingPush(false);
+        return;
+      }
+
+      // Register service worker if not already registered
+      let registration = await navigator.serviceWorker.getRegistration();
+      if (!registration) {
+        registration = await navigator.serviceWorker.register("/sw.js");
+        await navigator.serviceWorker.ready;
+      }
+
+      // Get VAPID public key
+      if (!vapidData?.publicKey) {
+        toast.error("Failed to get VAPID key");
+        setSubscribingPush(false);
+        return;
+      }
+
+      // Subscribe to push notifications
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: vapidData.publicKey,
+      });
+
+      // Send subscription to server
+      const subscriptionJSON = subscription.toJSON();
+      await subscribePush.mutateAsync({
+        subscription: {
+          endpoint: subscriptionJSON.endpoint!,
+          keys: {
+            p256dh: subscriptionJSON.keys!.p256dh!,
+            auth: subscriptionJSON.keys!.auth!,
+          },
+        },
+        deviceName: navigator.userAgent.includes("Mobile") ? "Mobile Device" : "Desktop",
+      });
+    } catch (error: any) {
+      console.error("Push notification error:", error);
+      toast.error(`Failed to enable push notifications: ${error.message}`);
+      setSubscribingPush(false);
+    }
   };
 
   const handleToggleAlert = async (
@@ -214,20 +372,96 @@ export default function AlertSettings() {
                 </div>
               </div>
             </div>
-            <Button
-              onClick={() => handleTestAlert("both")}
-              disabled={testingAlert}
-              variant="outline"
-              size="sm"
-            >
-              <TestTube className="h-4 w-4 mr-2" />
-              {testingAlert ? "Sending..." : "Test Alert"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={startTutorial}
+                variant="outline"
+                size="sm"
+              >
+                <HelpCircle className="h-4 w-4 mr-2" />
+                Tutorial
+              </Button>
+              <Button
+                id="test-alert-button"
+                onClick={() => handleTestAlert("both")}
+                disabled={testingAlert}
+                variant="outline"
+                size="sm"
+              >
+                <TestTube className="h-4 w-4 mr-2" />
+                {testingAlert ? "Sending..." : "Test Alert"}
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Push Notification Setup */}
+        {pushSupported && pushPermission !== "granted" && (
+          <Card id="push-notification-card" className="mb-6 border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-900">
+            <CardHeader>
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/50">
+                  <Monitor className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div className="flex-1">
+                  <CardTitle className="text-lg">Enable Browser Push Notifications</CardTitle>
+                  <CardDescription className="mt-1">
+                    Get instant alerts even when the site is closed. Works on desktop and mobile browsers.
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Button
+                onClick={handleEnablePushNotifications}
+                disabled={subscribingPush}
+                className="w-full sm:w-auto"
+              >
+                <Bell className="h-4 w-4 mr-2" />
+                {subscribingPush ? "Enabling..." : "Enable Push Notifications"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {pushSupported && pushPermission === "granted" && (
+          <Card className="mb-6 border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900">
+            <CardHeader>
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/50">
+                  <Monitor className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+                <div className="flex-1">
+                  <CardTitle className="text-lg">Push Notifications Enabled</CardTitle>
+                  <CardDescription className="mt-1">
+                    You'll receive browser notifications for your selected alerts.
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+        )}
+
+        {!pushSupported && (
+          <Card className="mb-6 border-slate-200 bg-slate-50 dark:bg-slate-900/20 dark:border-slate-800">
+            <CardHeader>
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
+                  <Monitor className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+                </div>
+                <div className="flex-1">
+                  <CardTitle className="text-lg">Push Notifications Not Supported</CardTitle>
+                  <CardDescription className="mt-1">
+                    Your browser doesn't support push notifications. You can still receive email alerts.
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+        )}
+
         {/* Alert Types */}
         <div className="space-y-4 mb-8">
           {alertTypes.map((alert) => {
@@ -236,7 +470,7 @@ export default function AlertSettings() {
             const Icon = alert.icon;
 
             return (
-              <Card key={alert.type}>
+              <Card key={alert.type} id={`alert-type-${alert.type.replace('_', '-')}`}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
@@ -279,7 +513,7 @@ export default function AlertSettings() {
                     )}
 
                     {/* Channel Selection */}
-                    <div className="space-y-2">
+                    <div className="space-y-2" id="alert-channel-select">
                       <Label htmlFor={`channel-${alert.type}`}>
                         Notification Channel
                       </Label>

@@ -20,7 +20,8 @@ import {
   Percent,
   Target,
   Award,
-  AlertCircle
+  AlertCircle,
+  Download
 } from "lucide-react";
 import { Link } from "wouter";
 import { useState, useEffect } from "react";
@@ -31,6 +32,81 @@ export default function TradeJournal() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<any>(null);
+
+  // CSV Export function
+  const exportToCSV = (trades: any[]) => {
+    if (!trades || trades.length === 0) {
+      toast.error("No trades to export");
+      return;
+    }
+
+    // CSV headers
+    const headers = [
+      "Date Entered",
+      "Date Closed",
+      "Pair",
+      "Type",
+      "Entry Price",
+      "Exit Price",
+      "Position Size",
+      "Stop Loss",
+      "Take Profit",
+      "P/L ($)",
+      "P/L (%)",
+      "P/L (pips)",
+      "Status",
+      "Notes"
+    ];
+
+    // Convert trades to CSV rows
+    const rows = trades.map(trade => {
+      const entryDate = new Date(trade.entryDate).toLocaleDateString();
+      const exitDate = trade.exitDate ? new Date(trade.exitDate).toLocaleDateString() : "";
+      const plDollars = trade.plDollars ? parseFloat(trade.plDollars).toFixed(2) : "";
+      const plPercentage = trade.plPercentage ? parseFloat(trade.plPercentage).toFixed(2) : "";
+      const plPips = trade.plPips ? parseFloat(trade.plPips).toFixed(1) : "";
+      const status = trade.exitDate ? "Closed" : "Open";
+      const notes = (trade.notes || "").replace(/"/g, '""'); // Escape quotes for CSV
+
+      return [
+        entryDate,
+        exitDate,
+        trade.pair,
+        trade.tradeType,
+        trade.entryPrice,
+        trade.exitPrice || "",
+        trade.positionSize || "",
+        trade.stopLoss || "",
+        trade.takeProfit || "",
+        plDollars,
+        plPercentage,
+        plPips,
+        status,
+        `"${notes}"`
+      ];
+    });
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.join(","))
+    ].join("\n");
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    const timestamp = new Date().toISOString().split('T')[0];
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", `FOX_TRADE_MASTER_Journal_${timestamp}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success(`Exported ${trades.length} trades to CSV`);
+  };
 
   // Check for pre-filled data from URL query parameter
   useEffect(() => {
@@ -420,10 +496,23 @@ export default function TradeJournal() {
         {/* Trades Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Your Trades</CardTitle>
-            <CardDescription>
-              Manual record of your actual trading activity
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Your Trades</CardTitle>
+                <CardDescription>
+                  Manual record of your actual trading activity
+                </CardDescription>
+              </div>
+              <Button
+                onClick={() => exportToCSV(allTrades || [])}
+                variant="outline"
+                size="sm"
+                disabled={!allTrades || allTrades.length === 0}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="all">
