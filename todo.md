@@ -247,3 +247,16 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [ ] Test Signal History page in production
 - [ ] Test performance email reports
 - [ ] Verify all features working in production
+
+## Phase 29: Fix Production Deployment Issue - IN PROGRESS 🚧
+- [x] Investigate why new features not showing in production
+- [x] Verify Render deployed correct commit (ac0ea00)
+- [x] Found root cause: /history route was never added to App.tsx
+- [x] Add SignalHistory import to App.tsx
+- [x] Add /history route to App.tsx router
+- [ ] Commit and push changes to GitHub
+- [ ] Trigger Render deployment
+- [ ] Verify /history route exists in production
+- [ ] Verify Signal History button appears in header
+- [ ] Verify P/L tracking components are deployed
+- [ ] Test all features in production after redeployment
