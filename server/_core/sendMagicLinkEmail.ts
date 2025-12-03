@@ -108,7 +108,11 @@ export async function sendMagicLinkEmail(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("[SendGrid] Failed to send email:", response.status, errorText);
+      console.error("[SendGrid] Failed to send email:");
+      console.error("[SendGrid] Status:", response.status);
+      console.error("[SendGrid] Response:", errorText);
+      console.error("[SendGrid] API Key present:", !!ENV.sendgridApiKey);
+      console.error("[SendGrid] From email:", ENV.fromEmail);
       return false;
     }
 

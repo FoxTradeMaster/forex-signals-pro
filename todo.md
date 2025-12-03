@@ -156,3 +156,26 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Add admin button to Dashboard header (desktop and mobile)
 - [x] Test admin access control (admin role only)
 - [ ] Deploy admin dashboard
+
+## Phase 21: Fix SendGrid Email Issue - IN PROGRESS 🚧
+- [ ] Add detailed error logging to SendGrid email function
+- [ ] Test magic link email sending
+- [ ] Debug SendGrid API response errors
+- [ ] Verify sender email is verified in SendGrid
+- [ ] Verify API key has Mail Send permissions
+- [ ] Test successful email delivery
+- [ ] Remove temporary auto-login endpoint after email works
+
+## Phase 22: Profit/Loss Tracking Feature - PENDING ⏳
+- [ ] Design P/L tracking system architecture
+- [ ] Create database schema for signal performance tracking
+- [ ] Implement real-time price fetching from Polygon API
+- [ ] Calculate P/L for active signals (entry vs current price)
+- [ ] Add P/L calculation backend logic
+- [ ] Create "IN PROFIT" / "IN LOSS" badge component
+- [ ] Display live P/L amount and pips
+- [ ] Add real-time updates to signal cards
+- [ ] Store historical P/L data for closed signals
+- [ ] Add P/L summary statistics to dashboard
+- [ ] Test P/L accuracy with real market data
+- [ ] Deploy P/L tracking feature
