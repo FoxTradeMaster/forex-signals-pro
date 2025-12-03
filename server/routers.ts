@@ -7,7 +7,7 @@ import { fetchForexData, fetchAllForexData, fetchForexDataForUser, getPairSymbol
 import { getPairMarketStatus, isForexMarketOpen, getCurrentSessionName, formatTimeUntilOpen } from "./marketHours";
 import { SignalEngine } from "./signalEngine";
 import { MomentumWindowAnalyzer } from "./momentumWindow";
-import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist, getDb, getUser, getPaymentByEmail, linkPaymentToUser, getAllPayments, getAllUsers, updateUserSubscription } from "./db";
+import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist, getDb, getUser, getPaymentByEmail, linkPaymentToUser, getAllPayments, getAllUsers, updateUserSubscription, upsertSignalPerformance, getSignalPerformance, getHistoricalPerformance } from "./db";
 import { users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { createPayPalOrder, capturePayPalOrder } from "./paypal";
@@ -308,6 +308,15 @@ export const appRouter = router({
           indicators: JSON.stringify(signal.indicators),
           isActive: "true",
         });
+
+        // Create initial P/L tracking record (P/L = 0 at entry)
+        await upsertSignalPerformance({
+          signalId: signal.id,
+          currentPrice: signal.entryPrice.toString(),
+          plDollars: "0",
+          plPips: "0",
+          plPercentage: "0",
+        });
       }
 
       return signals;
@@ -340,6 +349,15 @@ export const appRouter = router({
             reason: signal.reason,
             indicators: JSON.stringify(signal.indicators),
             isActive: "true",
+          });
+
+          // Create initial P/L tracking record (P/L = 0 at entry)
+          await upsertSignalPerformance({
+            signalId: signal.id,
+            currentPrice: signal.entryPrice.toString(),
+            plDollars: "0",
+            plPips: "0",
+            plPercentage: "0",
           });
         }
 

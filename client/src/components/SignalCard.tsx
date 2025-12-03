@@ -104,16 +104,26 @@ export function SignalCard({ signal, onDismiss, isPremium = false }: SignalCardP
               )}
             </div>
           </div>
-          {onDismiss && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => onDismiss(signal.id)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {/* P/L Badge (only for premium users with unlocked signals) */}
+            {mounted && isPremium && !isLocked && plData && (
+              <PLBadge
+                plDollars={parseFloat(plData.plDollars || "0")}
+                plPips={parseFloat(plData.plPips || "0")}
+                currentPrice={parseFloat(plData.currentPrice || "0")}
+              />
+            )}
+            {onDismiss && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => onDismiss(signal.id)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
 
@@ -181,17 +191,6 @@ export function SignalCard({ signal, onDismiss, isPremium = false }: SignalCardP
             <p className="text-sm text-muted-foreground">{signal.reasoning}</p>
           </div>
         </div>
-
-
-
-        {/* P/L Badge (only for premium users with unlocked signals) */}
-        {mounted && isPremium && !isLocked && plData && (
-          <PLBadge
-            plDollars={parseFloat(plData.plDollars || "0")}
-            plPips={parseFloat(plData.plPips || "0")}
-            currentPrice={parseFloat(plData.currentPrice || "0")}
-          />
-        )}
 
         {/* Timestamp */}
         <div className="text-xs text-muted-foreground text-right">
