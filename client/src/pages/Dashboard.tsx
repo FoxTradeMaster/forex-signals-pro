@@ -282,6 +282,17 @@ export default function Dashboard() {
                 Mastering Forex Signals Book
               </Button>
 
+              {/* Signal History Button */}
+              <Button
+                onClick={() => window.location.href = "/history"}
+                size="lg"
+                variant="outline"
+                className="border-2 border-blue-500 text-blue-700 hover:bg-blue-50"
+              >
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Signal History
+              </Button>
+
               {/* Admin Button (only for admins) */}
               {user?.role === 'admin' && (
                 <Button
@@ -421,6 +432,16 @@ export default function Dashboard() {
                 Book
               </Button>
             </div>
+
+            {/* Signal History Button */}
+            <Button
+              onClick={() => window.location.href = "/history"}
+              variant="outline"
+              className="w-full border-2 border-blue-500 text-blue-700 hover:bg-blue-50"
+            >
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Signal History
+            </Button>
 
             {/* Admin Button (mobile, only for admins) */}
             {user?.role === 'admin' && (

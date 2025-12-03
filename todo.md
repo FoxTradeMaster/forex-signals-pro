@@ -216,3 +216,34 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [ ] Deploy to Render
 - [ ] Test with production Polygon API (development has rate limits)
 - [ ] Verify P/L tracking in production with real signals
+
+## Phase 26: Add Signal History Navigation - COMPLETE ✅
+- [x] Add "View Signal History" button to Dashboard header (desktop)
+- [x] Add "View Signal History" button to Dashboard header (mobile)
+- [x] Style button to match existing header buttons (blue border with TrendingUp icon)
+- [x] Test navigation to /history page
+- [x] Verify button placement doesn't cause overflow
+
+## Phase 27: Performance Email Reports - COMPLETE ✅
+- [x] Create email template for weekly performance summary
+- [x] Create email template for monthly performance summary
+- [x] Add sendWeeklyPerformanceReport function to email service
+- [x] Add sendMonthlyPerformanceReport function to email service
+- [x] Create tRPC endpoint for manual report sending (admin.sendPerformanceReport)
+- [x] Email templates include: stats grid, credibility badges, best/worst signals, trading tips
+- [x] Beautiful HTML email design matching FOX TRADE MASTER branding
+- [ ] Add scheduled job for weekly reports (cron) - will implement in production
+- [ ] Add scheduled job for monthly reports (cron) - will implement in production
+- [ ] Add report preferences to user settings - future enhancement
+
+## Phase 28: Deployment to Render - IN PROGRESS 🚧
+- [x] Update todo.md with all completed items marked
+- [x] Create final checkpoint
+- [ ] Push changes to GitHub repository
+- [ ] Verify Render auto-deployment triggers
+- [ ] Monitor deployment logs
+- [ ] Run database migrations on production
+- [ ] Test P/L tracking with production Polygon API
+- [ ] Test Signal History page in production
+- [ ] Test performance email reports
+- [ ] Verify all features working in production

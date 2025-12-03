@@ -649,6 +649,43 @@ export const appRouter = router({
         await updateUserSubscription(input.userId, input.tier, expiry);
         return { success: true, message: "Subscription updated" };
       }),
+
+    // Send performance report to user (admin only)
+    sendPerformanceReport: protectedProcedure
+      .input(z.object({
+        email: z.string().email(),
+        reportType: z.enum(["weekly", "monthly"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUser(ctx.user.id);
+        if (!user || user.role !== "admin") {
+          throw new Error("Unauthorized: Admin access required");
+        }
+
+        const { sendWeeklyPerformanceReport, sendMonthlyPerformanceReport } = await import("./email");
+        const { getHistoricalPerformance } = await import("./db");
+        
+        // Get performance data based on report type
+        const days = input.reportType === "weekly" ? 7 : 30;
+        const performanceData = await getHistoricalPerformance(days);
+        
+        // Get user name from email
+        const targetUser = await getDb().then(db => 
+          db?.select().from(users).where(eq(users.email, input.email)).limit(1)
+        );
+        const userName = targetUser?.[0]?.name || input.email.split('@')[0];
+        
+        // Send appropriate report
+        const success = input.reportType === "weekly"
+          ? await sendWeeklyPerformanceReport(input.email, userName, performanceData)
+          : await sendMonthlyPerformanceReport(input.email, userName, performanceData);
+        
+        if (!success) {
+          throw new Error("Failed to send performance report");
+        }
+        
+        return { success: true, message: `${input.reportType} performance report sent to ${input.email}` };
+      }),
   }),
 });
 
