@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { SignalCard } from "@/components/SignalCard";
 import { ExpiryBanner } from "@/components/ExpiryBanner";
+import { PerformanceStats } from "@/components/PerformanceStats";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -334,6 +335,17 @@ export default function Dashboard() {
                 Mastering Forex Signals Book
               </Button>
 
+              {/* Signal History Button */}
+              <Button
+                onClick={() => window.location.href = "/history"}
+                size="lg"
+                variant="outline"
+                className="border-2 border-blue-500 text-blue-700 hover:bg-blue-50"
+              >
+                <span className="mr-2 text-lg">📊</span>
+                History
+              </Button>
+
               {/* Admin Button (only for admins) */}
               {user?.role === 'admin' && (
                 <Button
@@ -619,6 +631,9 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         )}
+
+        {/* Performance Statistics */}
+        <PerformanceStats />
 
         {/* Pro Search Bar */}
         {isPro && (

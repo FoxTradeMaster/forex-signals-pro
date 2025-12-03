@@ -659,6 +659,98 @@ export const appRouter = router({
 
         return { success: true, count: results.size };
       }),
+
+    // Get historical performance with statistics
+    getHistoricalPerformance: publicProcedure
+      .input(z.object({
+        dateRange: z.enum(["7d", "30d", "90d", "all"]),
+      }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) {
+          return {
+            signals: [],
+            stats: {
+              totalSignals: 0,
+              profitableSignals: 0,
+              losingSignals: 0,
+              winRate: 0,
+              totalProfitLoss: 0,
+              averageProfitLoss: 0,
+              bestSignal: null,
+              worstSignal: null,
+            },
+          };
+        }
+
+        // Calculate date filter
+        const now = new Date();
+        let dateFilter: Date | null = null;
+        
+        if (input.dateRange === "7d") {
+          dateFilter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        } else if (input.dateRange === "30d") {
+          dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        } else if (input.dateRange === "90d") {
+          dateFilter = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        }
+
+        // Fetch all signal performance records
+        const { signalPerformance } = await import("../drizzle/schema");
+        const { gte } = await import("drizzle-orm");
+        
+        let query = db.select().from(signalPerformance);
+        
+        if (dateFilter) {
+          query = query.where(gte(signalPerformance.createdAt, dateFilter)) as any;
+        }
+        
+        const signals = await query;
+
+        // Calculate statistics
+        const totalSignals = signals.length;
+        const profitableSignals = signals.filter(s => parseFloat(s.dollarPL || '0') > 0).length;
+        const losingSignals = signals.filter(s => parseFloat(s.dollarPL || '0') < 0).length;
+        const winRate = totalSignals > 0 ? (profitableSignals / totalSignals) * 100 : 0;
+        
+        const totalProfitLoss = signals.reduce((sum, s) => sum + parseFloat(s.dollarPL || '0'), 0);
+        const averageProfitLoss = totalSignals > 0 ? totalProfitLoss / totalSignals : 0;
+
+        // Find best and worst signals
+        const sortedByPL = [...signals].sort((a, b) => 
+          parseFloat(b.dollarPL || '0') - parseFloat(a.dollarPL || '0')
+        );
+        
+        const bestSignal = sortedByPL[0] ? {
+          pair: sortedByPL[0].pair,
+          signalType: sortedByPL[0].signalType,
+          dollarPL: parseFloat(sortedByPL[0].dollarPL || '0'),
+          pips: parseFloat(sortedByPL[0].pips || '0'),
+          createdAt: sortedByPL[0].createdAt,
+        } : null;
+
+        const worstSignal = sortedByPL[sortedByPL.length - 1] && parseFloat(sortedByPL[sortedByPL.length - 1].dollarPL || '0') < 0 ? {
+          pair: sortedByPL[sortedByPL.length - 1].pair,
+          signalType: sortedByPL[sortedByPL.length - 1].signalType,
+          dollarPL: parseFloat(sortedByPL[sortedByPL.length - 1].dollarPL || '0'),
+          pips: parseFloat(sortedByPL[sortedByPL.length - 1].pips || '0'),
+          createdAt: sortedByPL[sortedByPL.length - 1].createdAt,
+        } : null;
+
+        return {
+          signals,
+          stats: {
+            totalSignals,
+            profitableSignals,
+            losingSignals,
+            winRate,
+            totalProfitLoss,
+            averageProfitLoss,
+            bestSignal,
+            worstSignal,
+          },
+        };
+      }),
   }),
 });
 

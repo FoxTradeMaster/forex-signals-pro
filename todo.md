@@ -185,3 +185,38 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [ ] Show signal win/loss statistics on dashboard
 - [ ] Test P/L accuracy with real market data
 - [ ] Deploy P/L tracking system
+
+## Phase 23: Deploy P/L Tracking to Render - IN PROGRESS 🚧
+- [ ] Push latest code to GitHub repository
+- [ ] Verify Render auto-deployment triggers
+- [ ] Monitor deployment logs for errors
+- [ ] Verify database migration runs successfully (signalPerformance table)
+- [ ] Test P/L tracking with live Polygon API data
+- [ ] Verify P/L badges appear on signal cards in production
+- [ ] Check 30-second auto-refresh functionality
+- [ ] Confirm market-closed detection works
+
+## Phase 24: Historical Performance View - COMPLETE ✅
+- [x] Create SignalHistory page component
+- [x] Add route for /history in App.tsx
+- [x] Create tRPC endpoint to fetch closed/historical signals
+- [x] Design history table showing: pair, signal type, entry/exit prices, P/L result
+- [x] Add date range filter for historical data (7d, 30d, 90d, all time)
+- [x] Calculate and display win/loss ratio
+- [x] Show average profit per signal
+- [x] Add best/worst signal highlights
+- [x] Create navigation link from Dashboard to History page
+- [x] Statistics cards showing total signals, win rate, total P/L, avg P/L
+- [x] Best and worst signal cards with details
+
+## Phase 25: Performance Dashboard Statistics - COMPLETE ✅
+- [x] Create PerformanceStats component
+- [x] Add overall win rate calculation (% of profitable signals)
+- [x] Calculate total profit/loss across all signals
+- [x] Show 30-day performance breakdown
+- [x] Display average P/L per signal
+- [x] Add credibility badges (Elite Performer, Excellent, Good, Building Track Record)
+- [x] Integrate stats component into Dashboard (before Pro search bar)
+- [x] Add "Verified Performance Tracking" trust badge
+- [x] Color-coded metrics (green for profit, red for loss)
+- [x] Responsive grid layout for statistics cards
