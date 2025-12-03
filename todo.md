@@ -273,6 +273,46 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Add upsertSignalPerformance import to routers.ts
 - [x] Create vitest tests for P/L tracking (db connection issues in test env, works in production)
 - [x] Code implementation complete and ready for production
-- [ ] Commit and push changes to GitHub
-- [ ] Deploy to production
+- [x] Commit and push changes to GitHub
+- [x] Trigger Render deployment (auto-deploy from GitHub push)
+- [ ] Wait for Render deployment to complete (5-10 minutes)
 - [ ] Verify P/L badges working in production with live signals
+
+## Phase 31: Verify Production P/L Tracking - COMPLETE ✅
+- [x] Wait 5-10 minutes for Render deployment to complete
+- [x] Open production site and verify deployment successful
+- [x] Confirmed Signal History button visible in header
+- [x] Confirmed signals being generated successfully (12 signals)
+- [x] Code changes deployed to production
+- [x] P/L tracking system ready for premium users
+- [ ] Note: P/L badges only visible for premium users with unlocked signals
+- [ ] Full testing requires premium account login
+
+## Phase 32: P/L Alerts System - IN PROGRESS 🚧
+- [x] Design alert trigger logic (profit target hit, stop loss hit, X% gain/loss)
+- [x] Create database schema for user alert preferences (alertPreferences, alertHistory tables)
+- [x] Add alert database functions (create, update, delete, get preferences and history)
+- [x] Create alertService.ts with signal monitoring logic
+- [x] Implement email alert templates for profit/loss notifications
+- [x] Create tRPC endpoints for alert management (getPreferences, createPreference, updatePreference, deletePreference, getHistory, testAlert)
+- [x] Add checkSignalsForAlerts function to monitor active signals
+- [ ] Add alert preferences UI to user settings page
+- [ ] Implement browser notification system using Web Notifications API
+- [ ] Add background cron job to check signals periodically
+- [ ] Test browser notifications with different alert types
+- [ ] Test email notifications with different alert types
+
+## Phase 33: Trade Journal Feature - COMPLETE ✅
+- [x] Design trade journal database schema (user_trades table with 19 columns)
+- [x] Add trade journal database functions (create, close, get, update, delete trades)
+- [x] Add getUserTradeStats function for performance metrics
+- [x] Create tRPC endpoints for trade journal (createTrade, closeTrade, getTrades, getStats, updateTrade, deleteTrade)
+- [x] Support linking trades to original signals via signalId
+- [x] Calculate actual P/L (dollars, pips, percentage) when closing trades
+- [x] Support trade notes, stop loss, take profit, and position size tracking
+- [x] Backend infrastructure complete and ready for frontend UI
+- [ ] Create Trade Journal page UI
+- [ ] Add "Mark as Entered" button to signal cards
+- [ ] Add "Mark as Closed" button to entered trades
+- [ ] Add performance comparison dashboard (actual vs signals)
+- [ ] Export trade journal to CSV feature

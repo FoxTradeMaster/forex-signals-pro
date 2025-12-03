@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { pgTable, varchar, text, timestamp, pgEnum, boolean } from "drizzle-orm/pg-core";
 
 /**
  * Core user table backing auth flow.
@@ -113,3 +113,80 @@ export const signalPerformance = pgTable("signal_performance", {
 
 export type SignalPerformance = typeof signalPerformance.$inferSelect;
 export type InsertSignalPerformance = typeof signalPerformance.$inferInsert;
+
+/**
+ * Alert Preferences table - stores user notification preferences
+ */
+export const alertTypeEnum = pgEnum("alertType", ["profit_target", "stop_loss", "percent_gain", "percent_loss"]);
+export const alertChannelEnum = pgEnum("alertChannel", ["browser", "email", "both"]);
+
+export const alertPreferences = pgTable("alert_preferences", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  userId: varchar("userId", { length: 64 }).notNull(),
+  alertType: alertTypeEnum("alertType").notNull(),
+  threshold: varchar("threshold", { length: 20 }), // e.g., "5" for 5% gain/loss
+  channel: alertChannelEnum("channel").default("both").notNull(),
+  isEnabled: boolean("isEnabled").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type AlertPreference = typeof alertPreferences.$inferSelect;
+export type InsertAlertPreference = typeof alertPreferences.$inferInsert;
+
+/**
+ * Alert History table - logs all sent alerts
+ */
+export const alertHistory = pgTable("alert_history", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  userId: varchar("userId", { length: 64 }).notNull(),
+  signalId: varchar("signalId", { length: 64 }).notNull(),
+  alertType: alertTypeEnum("alertType").notNull(),
+  channel: alertChannelEnum("channel").notNull(),
+  message: text("message").notNull(),
+  plDollars: varchar("plDollars", { length: 20 }),
+  plPercentage: varchar("plPercentage", { length: 20 }),
+  sentAt: timestamp("sentAt").defaultNow().notNull(),
+});
+
+export type AlertHistory = typeof alertHistory.$inferSelect;
+export type InsertAlertHistory = typeof alertHistory.$inferInsert;
+
+/**
+ * Trade Journal table - tracks user's actual trades
+ */
+export const tradeStatusEnum = pgEnum("tradeStatus", ["entered", "closed"]);
+
+export const userTrades = pgTable("user_trades", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  userId: varchar("userId", { length: 64 }).notNull(),
+  signalId: varchar("signalId", { length: 64 }), // Optional: link to original signal
+  pair: varchar("pair", { length: 20 }).notNull(),
+  tradeType: varchar("tradeType", { length: 10 }).notNull(), // BUY, SELL
+  status: tradeStatusEnum("status").default("entered").notNull(),
+  
+  // Entry details
+  entryPrice: varchar("entryPrice", { length: 20 }).notNull(),
+  entryDate: timestamp("entryDate").notNull(),
+  positionSize: varchar("positionSize", { length: 20 }), // Lot size or units
+  
+  // Exit details (filled when closed)
+  exitPrice: varchar("exitPrice", { length: 20 }),
+  exitDate: timestamp("exitDate"),
+  
+  // P/L tracking
+  plDollars: varchar("plDollars", { length: 20 }),
+  plPips: varchar("plPips", { length: 20 }),
+  plPercentage: varchar("plPercentage", { length: 20 }),
+  
+  // Optional fields
+  notes: text("notes"),
+  stopLoss: varchar("stopLoss", { length: 20 }),
+  takeProfit: varchar("takeProfit", { length: 20 }),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type UserTrade = typeof userTrades.$inferSelect;
+export type InsertUserTrade = typeof userTrades.$inferInsert;

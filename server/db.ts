@@ -410,3 +410,362 @@ export async function getHistoricalPerformance(days = 30) {
     })),
   };
 }
+
+// Alert Preferences Management
+export async function createAlertPreference(preference: {
+  userId: string;
+  alertType: "profit_target" | "stop_loss" | "percent_gain" | "percent_loss";
+  threshold?: string;
+  channel: "browser" | "email" | "both";
+}) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { alertPreferences } = await import("../drizzle/schema");
+  const id = `alert-pref-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+  try {
+    await db.insert(alertPreferences).values({
+      id,
+      ...preference,
+      isEnabled: true,
+    });
+    return id;
+  } catch (error) {
+    console.error("[Database] Failed to create alert preference:", error);
+    return null;
+  }
+}
+
+export async function getUserAlertPreferences(userId: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { alertPreferences } = await import("../drizzle/schema");
+  
+  try {
+    const prefs = await db
+      .select()
+      .from(alertPreferences)
+      .where(eq(alertPreferences.userId, userId));
+    return prefs;
+  } catch (error) {
+    console.error("[Database] Failed to get alert preferences:", error);
+    return [];
+  }
+}
+
+export async function updateAlertPreference(id: string, updates: {
+  threshold?: string;
+  channel?: "browser" | "email" | "both";
+  isEnabled?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) return false;
+
+  const { alertPreferences } = await import("../drizzle/schema");
+
+  try {
+    await db
+      .update(alertPreferences)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(alertPreferences.id, id));
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to update alert preference:", error);
+    return false;
+  }
+}
+
+export async function deleteAlertPreference(id: string) {
+  const db = await getDb();
+  if (!db) return false;
+
+  const { alertPreferences } = await import("../drizzle/schema");
+
+  try {
+    await db.delete(alertPreferences).where(eq(alertPreferences.id, id));
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to delete alert preference:", error);
+    return false;
+  }
+}
+
+// Alert History Management
+export async function logAlert(alert: {
+  userId: string;
+  signalId: string;
+  alertType: "profit_target" | "stop_loss" | "percent_gain" | "percent_loss";
+  channel: "browser" | "email" | "both";
+  message: string;
+  plDollars?: string;
+  plPercentage?: string;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { alertHistory } = await import("../drizzle/schema");
+  const id = `alert-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+  try {
+    await db.insert(alertHistory).values({
+      id,
+      ...alert,
+    });
+    return id;
+  } catch (error) {
+    console.error("[Database] Failed to log alert:", error);
+    return null;
+  }
+}
+
+export async function getUserAlertHistory(userId: string, limit: number = 50) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { alertHistory, signals } = await import("../drizzle/schema");
+
+  try {
+    const history = await db
+      .select({
+        id: alertHistory.id,
+        signalId: alertHistory.signalId,
+        alertType: alertHistory.alertType,
+        channel: alertHistory.channel,
+        message: alertHistory.message,
+        plDollars: alertHistory.plDollars,
+        plPercentage: alertHistory.plPercentage,
+        sentAt: alertHistory.sentAt,
+        pair: signals.pair,
+        signalType: signals.signalType,
+      })
+      .from(alertHistory)
+      .leftJoin(signals, eq(alertHistory.signalId, signals.id))
+      .where(eq(alertHistory.userId, userId))
+      .orderBy(desc(alertHistory.sentAt))
+      .limit(limit);
+    
+    return history;
+  } catch (error) {
+    console.error("[Database] Failed to get alert history:", error);
+    return [];
+  }
+}
+
+// Trade Journal Management
+export async function createUserTrade(trade: {
+  userId: string;
+  signalId?: string;
+  pair: string;
+  tradeType: string;
+  entryPrice: string;
+  entryDate: Date;
+  positionSize?: string;
+  notes?: string;
+  stopLoss?: string;
+  takeProfit?: string;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { userTrades } = await import("../drizzle/schema");
+  const id = `trade-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+  try {
+    await db.insert(userTrades).values({
+      id,
+      ...trade,
+      status: "entered",
+    });
+    return id;
+  } catch (error) {
+    console.error("[Database] Failed to create user trade:", error);
+    return null;
+  }
+}
+
+export async function closeUserTrade(tradeId: string, exitPrice: string, exitDate: Date) {
+  const db = await getDb();
+  if (!db) return false;
+
+  const { userTrades } = await import("../drizzle/schema");
+
+  try {
+    // Get the trade to calculate P/L
+    const trades = await db
+      .select()
+      .from(userTrades)
+      .where(eq(userTrades.id, tradeId))
+      .limit(1);
+
+    if (trades.length === 0) {
+      console.error("[Database] Trade not found:", tradeId);
+      return false;
+    }
+
+    const trade = trades[0];
+    const entryPrice = parseFloat(trade.entryPrice);
+    const exitPriceNum = parseFloat(exitPrice);
+    
+    // Calculate P/L
+    let plDollars = 0;
+    let plPips = 0;
+    let plPercentage = 0;
+
+    if (trade.tradeType === "BUY") {
+      plDollars = exitPriceNum - entryPrice;
+      plPips = (exitPriceNum - entryPrice) * 10000; // Assuming 4 decimal places
+      plPercentage = ((exitPriceNum - entryPrice) / entryPrice) * 100;
+    } else {
+      plDollars = entryPrice - exitPriceNum;
+      plPips = (entryPrice - exitPriceNum) * 10000;
+      plPercentage = ((entryPrice - exitPriceNum) / entryPrice) * 100;
+    }
+
+    // Update the trade
+    await db
+      .update(userTrades)
+      .set({
+        status: "closed",
+        exitPrice,
+        exitDate,
+        plDollars: plDollars.toFixed(4),
+        plPips: plPips.toFixed(1),
+        plPercentage: plPercentage.toFixed(2),
+        updatedAt: new Date(),
+      })
+      .where(eq(userTrades.id, tradeId));
+
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to close user trade:", error);
+    return false;
+  }
+}
+
+export async function getUserTrades(userId: string, status?: "entered" | "closed") {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { userTrades } = await import("../drizzle/schema");
+
+  try {
+    if (status) {
+      const trades = await db
+        .select()
+        .from(userTrades)
+        .where(and(eq(userTrades.userId, userId), eq(userTrades.status, status)))
+        .orderBy(desc(userTrades.entryDate));
+      return trades;
+    } else {
+      const trades = await db
+        .select()
+        .from(userTrades)
+        .where(eq(userTrades.userId, userId))
+        .orderBy(desc(userTrades.entryDate));
+      return trades;
+    }
+  } catch (error) {
+    console.error("[Database] Failed to get user trades:", error);
+    return [];
+  }
+}
+
+export async function getUserTradeStats(userId: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { userTrades } = await import("../drizzle/schema");
+
+  try {
+    const closedTrades = await db
+      .select()
+      .from(userTrades)
+      .where(and(eq(userTrades.userId, userId), eq(userTrades.status, "closed")));
+
+    if (closedTrades.length === 0) {
+      return {
+        totalTrades: 0,
+        winningTrades: 0,
+        losingTrades: 0,
+        winRate: 0,
+        totalPL: 0,
+        avgPL: 0,
+        bestTrade: null,
+        worstTrade: null,
+      };
+    }
+
+    const totalTrades = closedTrades.length;
+    const winningTrades = closedTrades.filter(t => parseFloat(t.plDollars || "0") > 0).length;
+    const losingTrades = closedTrades.filter(t => parseFloat(t.plDollars || "0") < 0).length;
+    const winRate = (winningTrades / totalTrades) * 100;
+    const totalPL = closedTrades.reduce((sum, t) => sum + parseFloat(t.plDollars || "0"), 0);
+    const avgPL = totalPL / totalTrades;
+
+    const bestTrade = closedTrades.reduce((best, current) => {
+      const currentPL = parseFloat(current.plDollars || "0");
+      const bestPL = parseFloat(best.plDollars || "0");
+      return currentPL > bestPL ? current : best;
+    });
+
+    const worstTrade = closedTrades.reduce((worst, current) => {
+      const currentPL = parseFloat(current.plDollars || "0");
+      const worstPL = parseFloat(worst.plDollars || "0");
+      return currentPL < worstPL ? current : worst;
+    });
+
+    return {
+      totalTrades,
+      winningTrades,
+      losingTrades,
+      winRate,
+      totalPL,
+      avgPL,
+      bestTrade,
+      worstTrade,
+    };
+  } catch (error) {
+    console.error("[Database] Failed to get user trade stats:", error);
+    return null;
+  }
+}
+
+export async function updateUserTrade(tradeId: string, updates: {
+  notes?: string;
+  stopLoss?: string;
+  takeProfit?: string;
+  positionSize?: string;
+}) {
+  const db = await getDb();
+  if (!db) return false;
+
+  const { userTrades } = await import("../drizzle/schema");
+
+  try {
+    await db
+      .update(userTrades)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(userTrades.id, tradeId));
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to update user trade:", error);
+    return false;
+  }
+}
+
+export async function deleteUserTrade(tradeId: string) {
+  const db = await getDb();
+  if (!db) return false;
+
+  const { userTrades } = await import("../drizzle/schema");
+
+  try {
+    await db.delete(userTrades).where(eq(userTrades.id, tradeId));
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to delete user trade:", error);
+    return false;
+  }
+}

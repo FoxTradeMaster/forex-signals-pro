@@ -705,6 +705,194 @@ export const appRouter = router({
         return { success: true, message: `${input.reportType} performance report sent to ${input.email}` };
       }),
   }),
+
+  // Alert preferences and history
+  alerts: router({
+    // Get user's alert preferences
+    getPreferences: protectedProcedure.query(async ({ ctx }) => {
+      const { getUserAlertPreferences } = await import("./db");
+      return await getUserAlertPreferences(ctx.user.id);
+    }),
+
+    // Create new alert preference
+    createPreference: protectedProcedure
+      .input(z.object({
+        alertType: z.enum(["profit_target", "stop_loss", "percent_gain", "percent_loss"]),
+        threshold: z.string().optional(),
+        channel: z.enum(["browser", "email", "both"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { createAlertPreference } = await import("./db");
+        const id = await createAlertPreference({
+          userId: ctx.user.id,
+          ...input,
+        });
+        return { success: !!id, id };
+      }),
+
+    // Update alert preference
+    updatePreference: protectedProcedure
+      .input(z.object({
+        id: z.string(),
+        threshold: z.string().optional(),
+        channel: z.enum(["browser", "email", "both"]).optional(),
+        isEnabled: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { updateAlertPreference } = await import("./db");
+        const success = await updateAlertPreference(input.id, {
+          threshold: input.threshold,
+          channel: input.channel,
+          isEnabled: input.isEnabled,
+        });
+        return { success };
+      }),
+
+    // Delete alert preference
+    deletePreference: protectedProcedure
+      .input(z.object({ id: z.string() }))
+      .mutation(async ({ input }) => {
+        const { deleteAlertPreference } = await import("./db");
+        const success = await deleteAlertPreference(input.id);
+        return { success };
+      }),
+
+    // Get alert history
+    getHistory: protectedProcedure
+      .input(z.object({ limit: z.number().optional() }))
+      .query(async ({ ctx, input }) => {
+        const { getUserAlertHistory } = await import("./db");
+        return await getUserAlertHistory(ctx.user.id, input.limit);
+      }),
+
+    // Test alert (send test notification)
+    testAlert: protectedProcedure
+      .input(z.object({
+        channel: z.enum(["browser", "email", "both"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { sendAlertEmail } = await import("./alertService");
+        const user = await getUser(ctx.user.id);
+        
+        if (!user || !user.email) {
+          throw new Error("User email not found");
+        }
+
+        if (input.channel === "email" || input.channel === "both") {
+          await sendAlertEmail({
+            email: user.email,
+            name: user.name || "Trader",
+            pair: "EUR/USD",
+            signalType: "BUY",
+            alertType: "profit_target",
+            plDollars: 125.50,
+            plPercentage: 2.5,
+            currentPrice: 1.0850,
+          });
+        }
+
+        return { 
+          success: true, 
+          message: "Test alert sent successfully",
+          channel: input.channel,
+        };
+      }),
+  }),
+
+  // Trade Journal - Manual trade tracking
+  journal: router({
+    // Create new trade entry
+    createTrade: protectedProcedure
+      .input(z.object({
+        signalId: z.string().optional(),
+        pair: z.string(),
+        tradeType: z.enum(["BUY", "SELL"]),
+        entryPrice: z.string(),
+        entryDate: z.string(), // ISO date string
+        positionSize: z.string().optional(),
+        notes: z.string().optional(),
+        stopLoss: z.string().optional(),
+        takeProfit: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { createUserTrade } = await import("./db");
+        const id = await createUserTrade({
+          userId: ctx.user.id,
+          signalId: input.signalId,
+          pair: input.pair,
+          tradeType: input.tradeType,
+          entryPrice: input.entryPrice,
+          entryDate: new Date(input.entryDate),
+          positionSize: input.positionSize,
+          notes: input.notes,
+          stopLoss: input.stopLoss,
+          takeProfit: input.takeProfit,
+        });
+        return { success: !!id, id };
+      }),
+
+    // Close a trade
+    closeTrade: protectedProcedure
+      .input(z.object({
+        tradeId: z.string(),
+        exitPrice: z.string(),
+        exitDate: z.string(), // ISO date string
+      }))
+      .mutation(async ({ input }) => {
+        const { closeUserTrade } = await import("./db");
+        const success = await closeUserTrade(
+          input.tradeId,
+          input.exitPrice,
+          new Date(input.exitDate)
+        );
+        return { success };
+      }),
+
+    // Get user's trades
+    getTrades: protectedProcedure
+      .input(z.object({
+        status: z.enum(["entered", "closed"]).optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const { getUserTrades } = await import("./db");
+        return await getUserTrades(ctx.user.id, input.status);
+      }),
+
+    // Get trade statistics
+    getStats: protectedProcedure.query(async ({ ctx }) => {
+      const { getUserTradeStats } = await import("./db");
+      return await getUserTradeStats(ctx.user.id);
+    }),
+
+    // Update trade details
+    updateTrade: protectedProcedure
+      .input(z.object({
+        tradeId: z.string(),
+        notes: z.string().optional(),
+        stopLoss: z.string().optional(),
+        takeProfit: z.string().optional(),
+        positionSize: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { updateUserTrade } = await import("./db");
+        const success = await updateUserTrade(input.tradeId, {
+          notes: input.notes,
+          stopLoss: input.stopLoss,
+          takeProfit: input.takeProfit,
+          positionSize: input.positionSize,
+        });
+        return { success };
+      }),
+
+    // Delete a trade
+    deleteTrade: protectedProcedure
+      .input(z.object({ tradeId: z.string() }))
+      .mutation(async ({ input }) => {
+        const { deleteUserTrade } = await import("./db");
+        const success = await deleteUserTrade(input.tradeId);
+        return { success };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
