@@ -1,5 +1,5 @@
 {
-  "id": "2d7373c0-a975-4190-bd8c-b96ff7ff8311",
+  "id": "e6829ecd-8db0-4f80-8240-471aa3e3f3e9",
   "prevId": "93a936b6-aa90-4577-b16a-7d00258cc2c5",
   "version": "7",
   "dialect": "postgresql",
@@ -182,72 +182,35 @@
           "primaryKey": false,
           "notNull": true
         },
-        "pair": {
-          "name": "pair",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "signalType": {
-          "name": "signalType",
-          "type": "varchar(10)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "entryPrice": {
-          "name": "entryPrice",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": true
-        },
         "currentPrice": {
           "name": "currentPrice",
           "type": "varchar(20)",
           "primaryKey": false,
           "notNull": false
         },
-        "stopLoss": {
-          "name": "stopLoss",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "takeProfit": {
-          "name": "takeProfit",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "pips": {
-          "name": "pips",
+        "plDollars": {
+          "name": "plDollars",
           "type": "varchar(20)",
           "primaryKey": false,
           "notNull": false
         },
-        "dollarPL": {
-          "name": "dollarPL",
+        "plPips": {
+          "name": "plPips",
           "type": "varchar(20)",
           "primaryKey": false,
           "notNull": false
         },
-        "percentagePL": {
-          "name": "percentagePL",
+        "plPercentage": {
+          "name": "plPercentage",
           "type": "varchar(20)",
           "primaryKey": false,
           "notNull": false
         },
-        "status": {
-          "name": "status",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'active'"
-        },
-        "lastUpdated": {
-          "name": "lastUpdated",
+        "updatedAt": {
+          "name": "updatedAt",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "default": "now()"
         },
         "createdAt": {

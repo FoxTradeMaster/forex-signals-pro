@@ -7,8 +7,7 @@ import { fetchForexData, fetchAllForexData, fetchForexDataForUser, getPairSymbol
 import { getPairMarketStatus, isForexMarketOpen, getCurrentSessionName, formatTimeUntilOpen } from "./marketHours";
 import { SignalEngine } from "./signalEngine";
 import { MomentumWindowAnalyzer } from "./momentumWindow";
-import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist, getDb, getUser, getPaymentByEmail, linkPaymentToUser, getAllPayments, getAllUsers, updateUserSubscription, upsertSignalPerformance, getSignalPerformance, getAllActiveSignalPerformances } from "./db";
-import { calculatePL, batchCalculatePL } from "./plCalculator";
+import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist, getDb, getUser, getPaymentByEmail, linkPaymentToUser, getAllPayments, getAllUsers, updateUserSubscription } from "./db";
 import { users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { createPayPalOrder, capturePayPalOrder } from "./paypal";
@@ -479,6 +478,88 @@ export const appRouter = router({
   }),
 
   // Admin-only operations
+  // P/L Performance tracking
+  pl: router({ calculatePL: publicProcedure
+      .input(z.object({
+        signalId: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          // Get signal from database
+          const { getDb } = await import("./db");
+          const { signals } = await import("../drizzle/schema");
+          const db = await getDb();
+          if (!db) throw new Error("Database not available");
+
+          const [signal] = await db
+            .select()
+            .from(signals)
+            .where(eq(signals.id, input.signalId))
+            .limit(1);
+
+          if (!signal) {
+            throw new Error("Signal not found");
+          }
+
+          // Fetch current price
+          const { getCurrentPrice, calculatePL } = await import("./plCalculation");
+          const currentPrice = await getCurrentPrice(signal.pair);
+
+          if (!currentPrice) {
+            throw new Error("Failed to fetch current price");
+          }
+
+          // Calculate P/L
+          const plResult = calculatePL(signal.pair, {
+            signalType: signal.signalType as "BUY" | "SELL",
+            entryPrice: parseFloat(signal.entryPrice),
+            currentPrice,
+            stopLoss: parseFloat(signal.stopLoss),
+            takeProfit: parseFloat(signal.takeProfit),
+          });
+
+          // Save to database
+          const { upsertSignalPerformance } = await import("./db");
+          await upsertSignalPerformance({
+            signalId: signal.id,
+            currentPrice: plResult.currentPrice.toString(),
+            plDollars: plResult.plDollars.toString(),
+            plPips: plResult.plPips.toString(),
+            plPercentage: plResult.plPercentage.toString(),
+          });
+
+          return {
+            success: true,
+            data: plResult,
+          };
+        } catch (error) {
+          console.error("[P/L] Calculation error:", error);
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+          };
+        }
+      }),
+
+    getSignalPerformance: publicProcedure
+      .input(z.object({
+        signalId: z.string(),
+      }))
+      .query(async ({ input }) => {
+        const { getSignalPerformance } = await import("./db");
+        return await getSignalPerformance(input.signalId);
+      }),
+
+    getHistoricalPerformance: publicProcedure
+      .input(z.object({
+        days: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        const { getHistoricalPerformance } = await import("./db");
+        return await getHistoricalPerformance(input.days || 30);
+      }),
+  }),
+
   admin: router({
     // Get all payments
     getAllPayments: protectedProcedure.query(async ({ ctx }) => {
@@ -567,189 +648,6 @@ export const appRouter = router({
         const expiry = input.expiryDate ? new Date(input.expiryDate) : null;
         await updateUserSubscription(input.userId, input.tier, expiry);
         return { success: true, message: "Subscription updated" };
-      }),
-  }),
-
-  // Profit/Loss tracking
-  pl: router({
-    // Get P/L for a specific signal
-    getSignalPL: publicProcedure
-      .input(z.object({ signalId: z.string() }))
-      .query(async ({ input }) => {
-        return await getSignalPerformance(input.signalId);
-      }),
-
-    // Calculate and update P/L for a signal
-    calculateSignalPL: publicProcedure
-      .input(z.object({
-        signalId: z.string(),
-        pair: z.string(),
-        signalType: z.enum(["BUY", "SELL"]),
-        entryPrice: z.number(),
-        stopLoss: z.number(),
-        takeProfit: z.number(),
-      }))
-      .mutation(async ({ input }) => {
-        // Calculate P/L
-        const pl = await calculatePL(
-          input.pair,
-          input.signalType,
-          input.entryPrice,
-          input.stopLoss,
-          input.takeProfit
-        );
-
-        // Save to database
-        await upsertSignalPerformance({
-          id: `perf_${input.signalId}`,
-          signalId: input.signalId,
-          pair: input.pair,
-          signalType: input.signalType,
-          entryPrice: input.entryPrice.toString(),
-          currentPrice: pl.currentPrice.toString(),
-          stopLoss: input.stopLoss.toString(),
-          takeProfit: input.takeProfit.toString(),
-          pips: pl.pips.toString(),
-          dollarPL: pl.dollarPL.toString(),
-          percentagePL: pl.percentagePL.toString(),
-          status: pl.status,
-        });
-
-        return pl;
-      }),
-
-    // Get P/L for all active signals
-    getAllActivePL: publicProcedure.query(async () => {
-      return await getAllActiveSignalPerformances();
-    }),
-
-    // Batch update P/L for multiple signals
-    batchUpdatePL: publicProcedure
-      .input(z.array(z.object({
-        id: z.string(),
-        pair: z.string(),
-        signalType: z.enum(["BUY", "SELL"]),
-        entryPrice: z.number(),
-        stopLoss: z.number(),
-        takeProfit: z.number(),
-      })))
-      .mutation(async ({ input }) => {
-        const results = await batchCalculatePL(input);
-        
-        // Save all results to database
-        for (const [signalId, pl] of Array.from(results.entries())) {
-          const signal = input.find(s => s.id === signalId);
-          if (!signal) continue;
-
-          await upsertSignalPerformance({
-            id: `perf_${signalId}`,
-            signalId,
-            pair: signal.pair,
-            signalType: signal.signalType,
-            entryPrice: signal.entryPrice.toString(),
-            currentPrice: pl.currentPrice.toString(),
-            stopLoss: signal.stopLoss.toString(),
-            takeProfit: signal.takeProfit.toString(),
-            pips: pl.pips.toString(),
-            dollarPL: pl.dollarPL.toString(),
-            percentagePL: pl.percentagePL.toString(),
-            status: pl.status,
-          });
-        }
-
-        return { success: true, count: results.size };
-      }),
-
-    // Get historical performance with statistics
-    getHistoricalPerformance: publicProcedure
-      .input(z.object({
-        dateRange: z.enum(["7d", "30d", "90d", "all"]),
-      }))
-      .query(async ({ input }) => {
-        const db = await getDb();
-        if (!db) {
-          return {
-            signals: [],
-            stats: {
-              totalSignals: 0,
-              profitableSignals: 0,
-              losingSignals: 0,
-              winRate: 0,
-              totalProfitLoss: 0,
-              averageProfitLoss: 0,
-              bestSignal: null,
-              worstSignal: null,
-            },
-          };
-        }
-
-        // Calculate date filter
-        const now = new Date();
-        let dateFilter: Date | null = null;
-        
-        if (input.dateRange === "7d") {
-          dateFilter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        } else if (input.dateRange === "30d") {
-          dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        } else if (input.dateRange === "90d") {
-          dateFilter = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-        }
-
-        // Fetch all signal performance records
-        const { signalPerformance } = await import("../drizzle/schema");
-        const { gte } = await import("drizzle-orm");
-        
-        let query = db.select().from(signalPerformance);
-        
-        if (dateFilter) {
-          query = query.where(gte(signalPerformance.createdAt, dateFilter)) as any;
-        }
-        
-        const signals = await query;
-
-        // Calculate statistics
-        const totalSignals = signals.length;
-        const profitableSignals = signals.filter(s => parseFloat(s.dollarPL || '0') > 0).length;
-        const losingSignals = signals.filter(s => parseFloat(s.dollarPL || '0') < 0).length;
-        const winRate = totalSignals > 0 ? (profitableSignals / totalSignals) * 100 : 0;
-        
-        const totalProfitLoss = signals.reduce((sum, s) => sum + parseFloat(s.dollarPL || '0'), 0);
-        const averageProfitLoss = totalSignals > 0 ? totalProfitLoss / totalSignals : 0;
-
-        // Find best and worst signals
-        const sortedByPL = [...signals].sort((a, b) => 
-          parseFloat(b.dollarPL || '0') - parseFloat(a.dollarPL || '0')
-        );
-        
-        const bestSignal = sortedByPL[0] ? {
-          pair: sortedByPL[0].pair,
-          signalType: sortedByPL[0].signalType,
-          dollarPL: parseFloat(sortedByPL[0].dollarPL || '0'),
-          pips: parseFloat(sortedByPL[0].pips || '0'),
-          createdAt: sortedByPL[0].createdAt,
-        } : null;
-
-        const worstSignal = sortedByPL[sortedByPL.length - 1] && parseFloat(sortedByPL[sortedByPL.length - 1].dollarPL || '0') < 0 ? {
-          pair: sortedByPL[sortedByPL.length - 1].pair,
-          signalType: sortedByPL[sortedByPL.length - 1].signalType,
-          dollarPL: parseFloat(sortedByPL[sortedByPL.length - 1].dollarPL || '0'),
-          pips: parseFloat(sortedByPL[sortedByPL.length - 1].pips || '0'),
-          createdAt: sortedByPL[sortedByPL.length - 1].createdAt,
-        } : null;
-
-        return {
-          signals,
-          stats: {
-            totalSignals,
-            profitableSignals,
-            losingSignals,
-            winRate,
-            totalProfitLoss,
-            averageProfitLoss,
-            bestSignal,
-            worstSignal,
-          },
-        };
       }),
   }),
 });

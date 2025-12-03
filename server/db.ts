@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, gte, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { InsertUser, users, signals, InsertSignal, watchlist, InsertWatchlist, payments, InsertPayment } from "../drizzle/schema";
@@ -264,86 +264,149 @@ export async function updateUserSubscription(
     .where(eq(users.id, userId));
 }
 
-// ============================================
-// Signal Performance Tracking Functions
-// ============================================
-
-import { signalPerformance, InsertSignalPerformance, SignalPerformance } from "../drizzle/schema";
-
-/**
- * Create or update signal performance record
- */
-export async function upsertSignalPerformance(data: InsertSignalPerformance): Promise<void> {
+// P/L Performance tracking
+export async function upsertSignalPerformance(performance: {
+  signalId: string;
+  currentPrice: string;
+  plDollars: string;
+  plPips: string;
+  plPercentage: string;
+}) {
   const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot upsert signal performance: database not available");
-    return;
-  }
+  if (!db) return;
+
+  const { signalPerformance } = await import("../drizzle/schema");
+  const id = `perf-${performance.signalId}`;
 
   try {
-    await db.insert(signalPerformance).values(data).onConflictDoUpdate({
+    await db.insert(signalPerformance).values({
+      id,
+      ...performance,
+      updatedAt: new Date(),
+    }).onConflictDoUpdate({
       target: signalPerformance.id,
       set: {
-        currentPrice: data.currentPrice,
-        pips: data.pips,
-        dollarPL: data.dollarPL,
-        percentagePL: data.percentagePL,
-        status: data.status,
-        lastUpdated: new Date(),
+        currentPrice: performance.currentPrice,
+        plDollars: performance.plDollars,
+        plPips: performance.plPips,
+        plPercentage: performance.plPercentage,
+        updatedAt: new Date(),
       },
     });
   } catch (error) {
     console.error("[Database] Failed to upsert signal performance:", error);
-    throw error;
   }
 }
 
-/**
- * Get signal performance by signal ID
- */
-export async function getSignalPerformance(signalId: string): Promise<SignalPerformance | undefined> {
+export async function getSignalPerformance(signalId: string) {
   const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot get signal performance: database not available");
-    return undefined;
-  }
+  if (!db) return null;
 
-  const result = await db.select().from(signalPerformance).where(eq(signalPerformance.signalId, signalId)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  const { signalPerformance } = await import("../drizzle/schema");
+  const id = `perf-${signalId}`;
+
+  const result = await db
+    .select()
+    .from(signalPerformance)
+    .where(eq(signalPerformance.id, id))
+    .limit(1);
+
+  return result.length > 0 ? result[0] : null;
 }
 
-/**
- * Get all active signal performances
- */
-export async function getAllActiveSignalPerformances(): Promise<SignalPerformance[]> {
+export async function getHistoricalPerformance(days = 30) {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot get signal performances: database not available");
-    return [];
+    return {
+      totalSignals: 0,
+      winRate: 0,
+      totalPL: 0,
+      avgPL: 0,
+      bestSignal: null,
+      worstSignal: null,
+      signals: [],
+    };
   }
 
-  return await db.select().from(signalPerformance).where(eq(signalPerformance.status, "active"));
-}
+  const { signalPerformance, signals: signalsTable } = await import("../drizzle/schema");
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - days);
 
-/**
- * Update signal performance status (e.g., when TP/SL is hit)
- */
-export async function updateSignalPerformanceStatus(
-  signalId: string,
-  status: string
-): Promise<void> {
-  const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot update signal performance status: database not available");
-    return;
-  }
+  // Get all performance records with signal details
+  const result = await db
+    .select({
+      signalId: signalPerformance.signalId,
+      currentPrice: signalPerformance.currentPrice,
+      plDollars: signalPerformance.plDollars,
+      plPips: signalPerformance.plPips,
+      plPercentage: signalPerformance.plPercentage,
+      createdAt: signalPerformance.createdAt,
+      updatedAt: signalPerformance.updatedAt,
+      pair: signalsTable.pair,
+      signalType: signalsTable.signalType,
+      entryPrice: signalsTable.entryPrice,
+    })
+    .from(signalPerformance)
+    .innerJoin(signalsTable, eq(signalPerformance.signalId, signalsTable.id))
+    .where(gte(signalPerformance.createdAt, cutoffDate))
+    .orderBy(desc(signalPerformance.updatedAt));
 
-  try {
-    await db.update(signalPerformance)
-      .set({ status, lastUpdated: new Date() })
-      .where(eq(signalPerformance.signalId, signalId));
-  } catch (error) {
-    console.error("[Database] Failed to update signal performance status:", error);
-    throw error;
-  }
+  // Calculate statistics
+  const totalSignals = result.length;
+  const profitableSignals = result.filter(
+    (s) => parseFloat(s.plDollars || "0") > 0
+  ).length;
+  const winRate = totalSignals > 0 ? (profitableSignals / totalSignals) * 100 : 0;
+
+  const totalPL = result.reduce(
+    (sum, s) => sum + parseFloat(s.plDollars || "0"),
+    0
+  );
+  const avgPL = totalSignals > 0 ? totalPL / totalSignals : 0;
+
+  // Find best and worst signals
+  const sortedByPL = [...result].sort(
+    (a, b) => parseFloat(b.plDollars || "0") - parseFloat(a.plDollars || "0")
+  );
+  const bestSignal = sortedByPL[0]
+    ? {
+        signalId: sortedByPL[0].signalId,
+        pair: sortedByPL[0].pair || "",
+        signalType: sortedByPL[0].signalType || "BUY",
+        entryPrice: sortedByPL[0].entryPrice || "0",
+        currentPrice: sortedByPL[0].currentPrice || "0",
+        plDollars: parseFloat(sortedByPL[0].plDollars || "0"),
+        plPips: parseFloat(sortedByPL[0].plPips || "0"),
+      }
+    : null;
+  const worstSignal = sortedByPL[sortedByPL.length - 1]
+    ? {
+        signalId: sortedByPL[sortedByPL.length - 1].signalId,
+        pair: sortedByPL[sortedByPL.length - 1].pair || "",
+        signalType: sortedByPL[sortedByPL.length - 1].signalType || "BUY",
+        entryPrice: sortedByPL[sortedByPL.length - 1].entryPrice || "0",
+        currentPrice: sortedByPL[sortedByPL.length - 1].currentPrice || "0",
+        plDollars: parseFloat(sortedByPL[sortedByPL.length - 1].plDollars || "0"),
+        plPips: parseFloat(sortedByPL[sortedByPL.length - 1].plPips || "0"),
+      }
+    : null;
+
+  return {
+    totalSignals,
+    winRate,
+    totalPL,
+    avgPL,
+    bestSignal,
+    worstSignal,
+    signals: result.map((s) => ({
+      signalId: s.signalId,
+      pair: s.pair || "",
+      signalType: s.signalType || "BUY",
+      entryPrice: s.entryPrice || "0",
+      currentPrice: s.currentPrice || "0",
+      plDollars: parseFloat(s.plDollars || "0"),
+      plPips: parseFloat(s.plPips || "0"),
+      createdAt: s.createdAt,
+    })),
+  };
 }

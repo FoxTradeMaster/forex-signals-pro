@@ -37,6 +37,113 @@ async function startServer() {
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   
+  // TEMPORARY: Auto-login endpoint (remove after use)
+  app.get("/auto-login", async (req, res) => {
+    const secret = req.query.secret as string;
+    const expectedSecret = process.env.ADMIN_SETUP_SECRET || "ftm-admin-2025";
+    
+    if (secret !== expectedSecret) {
+      return res.status(403).json({ error: "Invalid secret" });
+    }
+
+    try {
+      const { getDb } = await import("../db");
+      const { users } = await import("../../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      const { sdk } = await import("./sdk");
+      const { COOKIE_NAME, ONE_YEAR_MS } = await import("../../shared/const");
+      const { getSessionCookieOptions } = await import("./cookies");
+      
+      const db = await getDb();
+      if (!db) {
+        return res.status(500).json({ error: "Database not available" });
+      }
+
+      const adminEmail = "support@foxtrademaster.com";
+      
+      // Get or create user
+      let [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, adminEmail))
+        .limit(1);
+
+      if (!user) {
+        // Create user
+        const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        await db.insert(users).values({
+          id: userId,
+          email: adminEmail,
+          name: "Fox Trade Master Admin",
+          role: "admin",
+          subscriptionTier: "pro",
+          loginMethod: "magic-link",
+          createdAt: new Date(),
+          lastSignedIn: new Date(),
+        });
+        
+        // Fetch the created user
+        [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.email, adminEmail))
+          .limit(1);
+      }
+
+      // Create session token
+      const sessionToken = await sdk.createSessionToken(user.id, {
+        name: user.name || "",
+        expiresInMs: ONE_YEAR_MS,
+      });
+
+      const cookieOptions = getSessionCookieOptions(req);
+      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+
+      // Redirect to admin dashboard
+      return res.redirect(302, "/admin");
+    } catch (error) {
+      console.error("[Auto-Login] Error:", error);
+      return res.status(500).json({ error: "Failed to create session" });
+    }
+  });
+
+  // TEMPORARY: Admin setup endpoint (remove after use)
+  app.get("/setup-admin", async (req, res) => {
+    const secret = req.query.secret as string;
+    const expectedSecret = process.env.ADMIN_SETUP_SECRET || "ftm-admin-2025";
+    
+    if (secret !== expectedSecret) {
+      return res.status(403).json({ error: "Invalid secret" });
+    }
+
+    try {
+      const { getDb } = await import("../db");
+      const { users } = await import("../../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      
+      const db = await getDb();
+      if (!db) {
+        return res.status(500).json({ error: "Database not available" });
+      }
+
+      const adminEmail = "support@foxtrademaster.com";
+      
+      // Update user to admin
+      await db
+        .update(users)
+        .set({ role: "admin" })
+        .where(eq(users.email, adminEmail));
+
+      return res.json({ 
+        success: true, 
+        message: `User ${adminEmail} is now an admin. Please remove this endpoint from server/_core/index.ts` 
+      });
+    } catch (error) {
+      console.error("[Admin Setup] Error:", error);
+      return res.status(500).json({ error: "Failed to set admin role" });
+    }
+  });
+
   // PayPal webhook endpoint
   app.post("/api/paypal/webhook", handlePayPalWebhook);
   // tRPC API

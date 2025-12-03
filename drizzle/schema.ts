@@ -98,22 +98,16 @@ export type Payment = typeof payments.$inferSelect;
 export type InsertPayment = typeof payments.$inferInsert;
 
 /**
- * Signal performance table - tracks real-time P/L for trading signals
+ * Signal Performance table - tracks P/L for each signal
  */
 export const signalPerformance = pgTable("signal_performance", {
   id: varchar("id", { length: 64 }).primaryKey(),
   signalId: varchar("signalId", { length: 64 }).notNull(),
-  pair: varchar("pair", { length: 20 }).notNull(),
-  signalType: varchar("signalType", { length: 10 }).notNull(), // BUY or SELL
-  entryPrice: varchar("entryPrice", { length: 20 }).notNull(),
   currentPrice: varchar("currentPrice", { length: 20 }),
-  stopLoss: varchar("stopLoss", { length: 20 }).notNull(),
-  takeProfit: varchar("takeProfit", { length: 20 }).notNull(),
-  pips: varchar("pips", { length: 20 }), // Current pip P/L
-  dollarPL: varchar("dollarPL", { length: 20 }), // Dollar P/L (calculated)
-  percentagePL: varchar("percentagePL", { length: 20 }), // Percentage P/L
-  status: varchar("status", { length: 20 }).default("active").notNull(), // active, hit_tp, hit_sl, closed
-  lastUpdated: timestamp("lastUpdated").defaultNow(),
+  plDollars: varchar("plDollars", { length: 20 }),
+  plPips: varchar("plPips", { length: 20 }),
+  plPercentage: varchar("plPercentage", { length: 20 }),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

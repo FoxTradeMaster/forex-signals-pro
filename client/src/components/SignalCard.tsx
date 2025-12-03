@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowDown, ArrowUp, TrendingUp, X, Clock } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { PLBadge } from "@/components/PLBadge";
+import { useState, useEffect } from "react";
 
 interface SignalCardProps {
   signal: {
@@ -24,6 +25,7 @@ interface SignalCardProps {
 }
 
 export function SignalCard({ signal, onDismiss, isPremium = false }: SignalCardProps) {
+  const [mounted, setMounted] = useState(false);
   const isBuy = signal.signalType === "BUY";
   const strength = parseInt(signal.strength);
   const isHighPriority = strength >= 7; // High priority signals get blinking alert
@@ -32,17 +34,18 @@ export function SignalCard({ signal, onDismiss, isPremium = false }: SignalCardP
   const { data: marketStatus } = trpc.market.getPairStatus.useQuery({ pair: signal.pair });
   const isMarketClosed = marketStatus && !marketStatus.isOpen;
 
-  // Fetch P/L data for this signal
-  const { data: plData } = trpc.pl.getSignalPL.useQuery(
-    { signalId: signal.id },
-    {
-      refetchInterval: 30000, // Refresh every 30 seconds
-      enabled: !isMarketClosed, // Only fetch when market is open
-    }
-  );
-
   // Check if this pair is locked (not EUR/USD and user is not premium)
   const isLocked = signal.pair !== "EUR/USD" && !isPremium;
+
+  // Fetch P/L data (only for premium users)
+  const { data: plData } = trpc.pl.getSignalPerformance.useQuery(
+    { signalId: signal.id },
+    { enabled: mounted && isPremium && !isLocked }
+  );
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const strategyLabels: Record<string, string> = {
     swing: "Swing Trading",
@@ -159,16 +162,6 @@ export function SignalCard({ signal, onDismiss, isPremium = false }: SignalCardP
                 </div>
               </div>
 
-              {/* P/L Badge - Show live profit/loss */}
-              {!isLocked && plData && plData.currentPrice && plData.dollarPL && plData.pips && (
-                <PLBadge
-                  status={plData.status as "in_profit" | "in_loss" | "hit_tp" | "hit_sl" | "market_closed"}
-                  currentPrice={parseFloat(plData.currentPrice)}
-                  dollarPL={parseFloat(plData.dollarPL)}
-                  pips={parseFloat(plData.pips)}
-                />
-              )}
-
               {/* Premium Upsell for Locked Signals */}
               {isLocked && (
                 <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
@@ -190,6 +183,15 @@ export function SignalCard({ signal, onDismiss, isPremium = false }: SignalCardP
         </div>
 
 
+
+        {/* P/L Badge (only for premium users with unlocked signals) */}
+        {mounted && isPremium && !isLocked && plData && (
+          <PLBadge
+            plDollars={parseFloat(plData.plDollars || "0")}
+            plPips={parseFloat(plData.plPips || "0")}
+            currentPrice={parseFloat(plData.currentPrice || "0")}
+          />
+        )}
 
         {/* Timestamp */}
         <div className="text-xs text-muted-foreground text-right">
