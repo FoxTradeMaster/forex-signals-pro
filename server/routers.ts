@@ -7,7 +7,8 @@ import { fetchForexData, fetchAllForexData, fetchForexDataForUser, getPairSymbol
 import { getPairMarketStatus, isForexMarketOpen, getCurrentSessionName, formatTimeUntilOpen } from "./marketHours";
 import { SignalEngine } from "./signalEngine";
 import { MomentumWindowAnalyzer } from "./momentumWindow";
-import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist, getDb, getUser, getPaymentByEmail, linkPaymentToUser, getAllPayments, getAllUsers, updateUserSubscription } from "./db";
+import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist, getDb, getUser, getPaymentByEmail, linkPaymentToUser, getAllPayments, getAllUsers, updateUserSubscription, upsertSignalPerformance, getSignalPerformance, getAllActiveSignalPerformances } from "./db";
+import { calculatePL, batchCalculatePL } from "./plCalculator";
 import { users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { createPayPalOrder, capturePayPalOrder } from "./paypal";
@@ -566,6 +567,97 @@ export const appRouter = router({
         const expiry = input.expiryDate ? new Date(input.expiryDate) : null;
         await updateUserSubscription(input.userId, input.tier, expiry);
         return { success: true, message: "Subscription updated" };
+      }),
+  }),
+
+  // Profit/Loss tracking
+  pl: router({
+    // Get P/L for a specific signal
+    getSignalPL: publicProcedure
+      .input(z.object({ signalId: z.string() }))
+      .query(async ({ input }) => {
+        return await getSignalPerformance(input.signalId);
+      }),
+
+    // Calculate and update P/L for a signal
+    calculateSignalPL: publicProcedure
+      .input(z.object({
+        signalId: z.string(),
+        pair: z.string(),
+        signalType: z.enum(["BUY", "SELL"]),
+        entryPrice: z.number(),
+        stopLoss: z.number(),
+        takeProfit: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        // Calculate P/L
+        const pl = await calculatePL(
+          input.pair,
+          input.signalType,
+          input.entryPrice,
+          input.stopLoss,
+          input.takeProfit
+        );
+
+        // Save to database
+        await upsertSignalPerformance({
+          id: `perf_${input.signalId}`,
+          signalId: input.signalId,
+          pair: input.pair,
+          signalType: input.signalType,
+          entryPrice: input.entryPrice.toString(),
+          currentPrice: pl.currentPrice.toString(),
+          stopLoss: input.stopLoss.toString(),
+          takeProfit: input.takeProfit.toString(),
+          pips: pl.pips.toString(),
+          dollarPL: pl.dollarPL.toString(),
+          percentagePL: pl.percentagePL.toString(),
+          status: pl.status,
+        });
+
+        return pl;
+      }),
+
+    // Get P/L for all active signals
+    getAllActivePL: publicProcedure.query(async () => {
+      return await getAllActiveSignalPerformances();
+    }),
+
+    // Batch update P/L for multiple signals
+    batchUpdatePL: publicProcedure
+      .input(z.array(z.object({
+        id: z.string(),
+        pair: z.string(),
+        signalType: z.enum(["BUY", "SELL"]),
+        entryPrice: z.number(),
+        stopLoss: z.number(),
+        takeProfit: z.number(),
+      })))
+      .mutation(async ({ input }) => {
+        const results = await batchCalculatePL(input);
+        
+        // Save all results to database
+        for (const [signalId, pl] of Array.from(results.entries())) {
+          const signal = input.find(s => s.id === signalId);
+          if (!signal) continue;
+
+          await upsertSignalPerformance({
+            id: `perf_${signalId}`,
+            signalId,
+            pair: signal.pair,
+            signalType: signal.signalType,
+            entryPrice: signal.entryPrice.toString(),
+            currentPrice: pl.currentPrice.toString(),
+            stopLoss: signal.stopLoss.toString(),
+            takeProfit: signal.takeProfit.toString(),
+            pips: pl.pips.toString(),
+            dollarPL: pl.dollarPL.toString(),
+            percentagePL: pl.percentagePL.toString(),
+            status: pl.status,
+          });
+        }
+
+        return { success: true, count: results.size };
       }),
   }),
 });

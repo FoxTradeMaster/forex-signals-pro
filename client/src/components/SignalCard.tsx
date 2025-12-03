@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowDown, ArrowUp, TrendingUp, X, Clock } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { PLBadge } from "@/components/PLBadge";
 
 interface SignalCardProps {
   signal: {
@@ -30,6 +31,15 @@ export function SignalCard({ signal, onDismiss, isPremium = false }: SignalCardP
   // Fetch market status for this pair
   const { data: marketStatus } = trpc.market.getPairStatus.useQuery({ pair: signal.pair });
   const isMarketClosed = marketStatus && !marketStatus.isOpen;
+
+  // Fetch P/L data for this signal
+  const { data: plData } = trpc.pl.getSignalPL.useQuery(
+    { signalId: signal.id },
+    {
+      refetchInterval: 30000, // Refresh every 30 seconds
+      enabled: !isMarketClosed, // Only fetch when market is open
+    }
+  );
 
   // Check if this pair is locked (not EUR/USD and user is not premium)
   const isLocked = signal.pair !== "EUR/USD" && !isPremium;
@@ -148,6 +158,16 @@ export function SignalCard({ signal, onDismiss, isPremium = false }: SignalCardP
                   </p>
                 </div>
               </div>
+
+              {/* P/L Badge - Show live profit/loss */}
+              {!isLocked && plData && plData.currentPrice && plData.dollarPL && plData.pips && (
+                <PLBadge
+                  status={plData.status as "in_profit" | "in_loss" | "hit_tp" | "hit_sl" | "market_closed"}
+                  currentPrice={parseFloat(plData.currentPrice)}
+                  dollarPL={parseFloat(plData.dollarPL)}
+                  pips={parseFloat(plData.pips)}
+                />
+              )}
 
               {/* Premium Upsell for Locked Signals */}
               {isLocked && (

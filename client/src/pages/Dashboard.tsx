@@ -58,12 +58,34 @@ export default function Dashboard() {
   const { data: momentumData, isLoading: momentumLoading } = 
     trpc.momentum.analyzeAll.useQuery();
 
+  // Batch update P/L mutation
+  const batchUpdatePL = trpc.pl.batchUpdatePL.useMutation();
+
   // Generate signals mutation
   const generateSignals = trpc.signals.generateAll.useMutation({
-    onSuccess: (newSignals) => {
+    onSuccess: async (newSignals) => {
       toast.success(`Generated ${newSignals.length} new trading signals!`);
       setLastUpdated(new Date());
       refetchSignals();
+      
+      // Calculate P/L for all new signals
+      if (newSignals.length > 0) {
+        const signalsForPL = newSignals.map(signal => ({
+          id: signal.id,
+          pair: signal.pair,
+          signalType: signal.signalType as "BUY" | "SELL",
+          entryPrice: Number(signal.entryPrice),
+          stopLoss: Number(signal.stopLoss),
+          takeProfit: Number(signal.takeProfit),
+        }));
+        
+        try {
+          await batchUpdatePL.mutateAsync(signalsForPL);
+          console.log('[P/L] Calculated P/L for', newSignals.length, 'signals');
+        } catch (error) {
+          console.error('[P/L] Failed to calculate P/L:', error);
+        }
+      }
     },
     onError: (error) => {
       toast.error(`Failed to generate signals: ${error.message}`);
@@ -129,6 +151,37 @@ export default function Dashboard() {
 
     return () => clearInterval(generateInterval);
   }, []);
+
+  // Auto-update P/L for all active signals every 30 seconds
+  useEffect(() => {
+    const updatePL = async () => {
+      if (!signals || signals.length === 0) return;
+      
+      const signalsForPL = signals.map(signal => ({
+        id: signal.id,
+        pair: signal.pair,
+        signalType: signal.signalType as "BUY" | "SELL",
+        entryPrice: Number(signal.entryPrice),
+        stopLoss: Number(signal.stopLoss),
+        takeProfit: Number(signal.takeProfit),
+      }));
+      
+      try {
+        await batchUpdatePL.mutateAsync(signalsForPL);
+        console.log('[P/L] Updated P/L for', signals.length, 'signals');
+      } catch (error) {
+        console.error('[P/L] Failed to update P/L:', error);
+      }
+    };
+
+    // Initial update
+    updatePL();
+
+    // Set up interval
+    const plInterval = setInterval(updatePL, 30 * 1000); // 30 seconds
+
+    return () => clearInterval(plInterval);
+  }, [signals, batchUpdatePL]);
 
   const handleGenerateSignals = () => {
     generateSignals.mutate();

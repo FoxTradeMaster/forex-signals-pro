@@ -263,3 +263,87 @@ export async function updateUserSubscription(
     })
     .where(eq(users.id, userId));
 }
+
+// ============================================
+// Signal Performance Tracking Functions
+// ============================================
+
+import { signalPerformance, InsertSignalPerformance, SignalPerformance } from "../drizzle/schema";
+
+/**
+ * Create or update signal performance record
+ */
+export async function upsertSignalPerformance(data: InsertSignalPerformance): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot upsert signal performance: database not available");
+    return;
+  }
+
+  try {
+    await db.insert(signalPerformance).values(data).onConflictDoUpdate({
+      target: signalPerformance.id,
+      set: {
+        currentPrice: data.currentPrice,
+        pips: data.pips,
+        dollarPL: data.dollarPL,
+        percentagePL: data.percentagePL,
+        status: data.status,
+        lastUpdated: new Date(),
+      },
+    });
+  } catch (error) {
+    console.error("[Database] Failed to upsert signal performance:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get signal performance by signal ID
+ */
+export async function getSignalPerformance(signalId: string): Promise<SignalPerformance | undefined> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get signal performance: database not available");
+    return undefined;
+  }
+
+  const result = await db.select().from(signalPerformance).where(eq(signalPerformance.signalId, signalId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+/**
+ * Get all active signal performances
+ */
+export async function getAllActiveSignalPerformances(): Promise<SignalPerformance[]> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get signal performances: database not available");
+    return [];
+  }
+
+  return await db.select().from(signalPerformance).where(eq(signalPerformance.status, "active"));
+}
+
+/**
+ * Update signal performance status (e.g., when TP/SL is hit)
+ */
+export async function updateSignalPerformanceStatus(
+  signalId: string,
+  status: string
+): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot update signal performance status: database not available");
+    return;
+  }
+
+  try {
+    await db.update(signalPerformance)
+      .set({ status, lastUpdated: new Date() })
+      .where(eq(signalPerformance.signalId, signalId));
+  } catch (error) {
+    console.error("[Database] Failed to update signal performance status:", error);
+    throw error;
+  }
+}

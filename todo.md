@@ -166,16 +166,22 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [ ] Test successful email delivery
 - [ ] Remove temporary auto-login endpoint after email works
 
-## Phase 22: Profit/Loss Tracking Feature - PENDING ⏳
-- [ ] Design P/L tracking system architecture
-- [ ] Create database schema for signal performance tracking
-- [ ] Implement real-time price fetching from Polygon API
-- [ ] Calculate P/L for active signals (entry vs current price)
-- [ ] Add P/L calculation backend logic
-- [ ] Create "IN PROFIT" / "IN LOSS" badge component
-- [ ] Display live P/L amount and pips
-- [ ] Add real-time updates to signal cards
-- [ ] Store historical P/L data for closed signals
-- [ ] Add P/L summary statistics to dashboard
+## Phase 22: Profit/Loss Tracking Feature - IN PROGRESS 🚧
+- [x] Design P/L tracking system architecture
+- [x] Add signalPerformance table to database schema
+- [ ] Push database migration for signal performance
+- [x] Implement real-time price fetching from Polygon API
+- [x] Build P/L calculation engine (pips, dollars, percentage)
+- [x] Create backend tRPC endpoints for P/L data
+- [x] Add P/L badge component (IN PROFIT / IN LOSS with green/red styling)
+- [x] Display live current price on signal cards
+- [x] Show dollar P/L amount (e.g., +$5.04)
+- [x] Show pip P/L (e.g., +50.4 pips)
+- [x] Implement auto-refresh for live price updates every 30 seconds
+- [x] Integrate P/L badge into signal cards on Dashboard
+- [x] Add automatic P/L calculation when signals are generated
+- [x] Add periodic P/L updates every 30 seconds for all active signals
+- [ ] Add historical performance tracking for closed signals
+- [ ] Show signal win/loss statistics on dashboard
 - [ ] Test P/L accuracy with real market data
-- [ ] Deploy P/L tracking feature
+- [ ] Deploy P/L tracking system
