@@ -25,7 +25,6 @@ import {
 import { Link } from "wouter";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { useAuth } from "@/_core/hooks/useAuth";
 
 export default function TradeJournal() {
   const { user, loading, isAuthenticated } = useAuth();

@@ -393,3 +393,40 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [ ] Verify browser notifications work
 - [ ] Verify email notifications work
 - [ ] Monitor cron job execution in Render dashboard
+
+## Phase 40: Browser Push Notifications - IN PROGRESS 🚧
+- [x] Create service worker for push notifications (client/public/sw.js)
+- [x] Add push subscription database schema (user_push_subscriptions table)
+- [x] Add push subscription database functions (create, get, delete, updateLastUsed)
+- [x] Generate database migration (drizzle/0006_useful_molly_hayes.sql)
+- [x] Handle push events and notification clicks in service worker
+- [ ] Add VAPID keys generation and configuration
+- [ ] Install web-push library (pnpm add web-push)
+- [ ] Add tRPC endpoints for push subscription management
+- [ ] Update alertService to send both email and push notifications
+- [ ] Add notification permission UI in Alert Settings page
+- [ ] Request user permission for notifications
+- [ ] Test push notifications in browser
+- [ ] Register service worker in main.tsx
+
+## Phase 41: Alert Settings Onboarding Tutorial - PENDING
+- [ ] Install/configure tooltip/tour library (e.g., driver.js or react-joyride)
+- [ ] Create onboarding tour steps for Alert Settings page
+- [ ] Add tooltips explaining each alert type
+- [ ] Add tooltip for threshold configuration
+- [ ] Add tooltip for channel selection (email vs browser)
+- [ ] Store onboarding completion status in user preferences
+- [ ] Add "Show Tutorial" button to restart onboarding
+- [ ] Style tooltips to match app design
+- [ ] Test onboarding flow for first-time users
+
+## Phase 42: CSV Export for Trade Journal - PENDING
+- [ ] Add CSV export button to Trade Journal page
+- [ ] Create CSV generation function for trade data
+- [ ] Include all trade fields (pair, type, entry, exit, P/L, dates, notes)
+- [ ] Add date range filter for export
+- [ ] Format CSV for tax reporting (include calculated P/L)
+- [ ] Add export options (all trades, open only, closed only)
+- [ ] Trigger browser download with proper filename
+- [ ] Test CSV export with different data sets
+- [ ] Verify CSV format compatible with Excel/Google Sheets

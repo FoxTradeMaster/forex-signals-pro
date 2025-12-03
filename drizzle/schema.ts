@@ -190,3 +190,20 @@ export const userTrades = pgTable("user_trades", {
 
 export type UserTrade = typeof userTrades.$inferSelect;
 export type InsertUserTrade = typeof userTrades.$inferInsert;
+
+/**
+ * Push Notification Subscriptions table - stores browser push notification subscriptions
+ */
+export const userPushSubscriptions = pgTable("user_push_subscriptions", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  userId: varchar("userId", { length: 64 }).notNull(),
+  endpoint: text("endpoint").notNull(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  userAgent: text("userAgent"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  lastUsed: timestamp("lastUsed").defaultNow(),
+});
+
+export type UserPushSubscription = typeof userPushSubscriptions.$inferSelect;
+export type InsertUserPushSubscription = typeof userPushSubscriptions.$inferInsert;

@@ -43,6 +43,13 @@
       "when": 1764798148164,
       "tag": "0005_bright_banshee",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1764800490998,
+      "tag": "0006_useful_molly_hayes",
+      "breakpoints": true
     }
   ]
 }

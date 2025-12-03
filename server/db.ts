@@ -769,3 +769,82 @@ export async function deleteUserTrade(tradeId: string) {
     return false;
   }
 }
+
+
+// ===== Push Notification Subscriptions =====
+
+export async function createPushSubscription(subscription: {
+  userId: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  userAgent?: string;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { userPushSubscriptions } = await import("../drizzle/schema");
+  const id = `push-sub-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+  try {
+    await db.insert(userPushSubscriptions).values({
+      id,
+      ...subscription,
+    });
+    return id;
+  } catch (error) {
+    console.error("[Database] Failed to create push subscription:", error);
+    return null;
+  }
+}
+
+export async function getUserPushSubscriptions(userId: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { userPushSubscriptions } = await import("../drizzle/schema");
+
+  try {
+    const subs = await db
+      .select()
+      .from(userPushSubscriptions)
+      .where(eq(userPushSubscriptions.userId, userId));
+    return subs;
+  } catch (error) {
+    console.error("[Database] Failed to get push subscriptions:", error);
+    return [];
+  }
+}
+
+export async function deletePushSubscription(id: string) {
+  const db = await getDb();
+  if (!db) return false;
+
+  const { userPushSubscriptions } = await import("../drizzle/schema");
+
+  try {
+    await db.delete(userPushSubscriptions).where(eq(userPushSubscriptions.id, id));
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to delete push subscription:", error);
+    return false;
+  }
+}
+
+export async function updatePushSubscriptionLastUsed(id: string) {
+  const db = await getDb();
+  if (!db) return false;
+
+  const { userPushSubscriptions } = await import("../drizzle/schema");
+
+  try {
+    await db
+      .update(userPushSubscriptions)
+      .set({ lastUsed: new Date() })
+      .where(eq(userPushSubscriptions.id, id));
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to update push subscription:", error);
+    return false;
+  }
+}
