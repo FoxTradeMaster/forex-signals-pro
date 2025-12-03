@@ -11,6 +11,8 @@ import ActivateAccount from "./pages/ActivateAccount";
 import VerifyMagicLink from "./pages/VerifyMagicLink";
 import Admin from "./pages/Admin";
 import SignalHistory from "./pages/SignalHistory";
+import AlertSettings from "./pages/AlertSettings";
+import TradeJournal from "./pages/TradeJournal";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -23,7 +25,9 @@ function Router() {
       <Route path="/auth/verify" component={VerifyMagicLink} />
       <Route path="/admin" component={Admin} />
       <Route path="/history" component={SignalHistory} />
-      <Route path={" /404"} component={NotFound} />      {/* Final fallback route */}
+      <Route path="/settings/alerts" component={AlertSettings} />
+      <Route path="/journal" component={TradeJournal} />
+      <Route path={"/404"} component={NotFound} />      {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>
   );

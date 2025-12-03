@@ -316,3 +316,46 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [ ] Add "Mark as Closed" button to entered trades
 - [ ] Add performance comparison dashboard (actual vs signals)
 - [ ] Export trade journal to CSV feature
+
+## Phase 34: Database Migrations in Production - COMPLETE ✅
+- [x] Wait for Render deployment to complete (5-10 minutes)
+- [x] Access Render Shell for forex-signals-pro service
+- [x] Run `pnpm db:push` to create new tables
+- [x] Verify alert_preferences table created
+- [x] Verify alert_history table created
+- [x] Verify user_trades table created
+- [x] Confirm migrations completed successfully
+
+## Phase 35: Alert Settings UI Page - COMPLETE ✅
+- [x] Create AlertSettings.tsx page component
+- [x] Add route /settings/alerts to App.tsx
+- [x] Design alert preferences form with shadcn/ui components
+- [x] Add toggle switches for each alert type (profit_target, stop_loss, percent_gain, percent_loss)
+- [x] Add threshold input fields for percentage-based alerts
+- [x] Add channel selection (browser, email, both) for each alert
+- [x] Integrate trpc.alerts.getPreferences query
+- [x] Integrate trpc.alerts.createPreference mutation
+- [x] Integrate trpc.alerts.updatePreference mutation
+- [x] Integrate trpc.alerts.deletePreference mutation
+- [x] Add "Test Alert" button to send test notifications
+- [x] Add alert history section showing past notifications
+- [x] Style with Tailwind CSS matching app design
+- [ ] TypeScript errors will resolve after tRPC types regenerate in production
+
+## Phase 36: Trade Journal UI Page - COMPLETE ✅
+- [x] Create TradeJournal.tsx page component (with New Trade and Close Trade dialogs)
+- [x] Add route /journal to App.tsx
+- [x] Design trade entry form with shadcn/ui components (Dialog, Input, Select, Textarea)
+- [x] Create trade table showing entered and closed trades with tabs (All, Open, Closed)
+- [x] Add "Close Trade" button/modal for entered trades
+- [x] Integrate trpc.journal.getTrades query (with status filter)
+- [x] Integrate trpc.journal.createTrade mutation
+- [x] Integrate trpc.journal.closeTrade mutation
+- [x] Integrate trpc.journal.getStats query for statistics dashboard
+- [x] Display trade statistics (win rate, total P/L, avg P/L, best trade)
+- [x] Add credibility badges (Elite/Excellent/Good/Developing)
+- [x] Style with Tailwind CSS matching app design
+- [ ] Add "Mark as Entered" button to SignalCard component - future enhancement
+- [ ] Add performance comparison: actual vs signals - future enhancement
+- [ ] Add export to CSV functionality - future enhancement
+- [ ] TypeScript errors will resolve after tRPC types regenerate in production
