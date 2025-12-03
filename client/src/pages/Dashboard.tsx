@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAudioNotification } from "@/hooks/useAudioNotification";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { RefreshCw, Volume2, VolumeX, TrendingUp, Clock, Zap, Filter, Crown, Search } from "lucide-react";
+import { RefreshCw, Volume2, VolumeX, TrendingUp, Clock, Zap, Filter, Crown, Search, Bell, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Dashboard() {
@@ -293,6 +293,28 @@ export default function Dashboard() {
                 Signal History
               </Button>
 
+              {/* Alert Settings Button */}
+              <Button
+                onClick={() => window.location.href = "/settings/alerts"}
+                size="lg"
+                variant="outline"
+                className="border-2 border-purple-500 text-purple-700 hover:bg-purple-50"
+              >
+                <Bell className="h-4 w-4 mr-2" />
+                Alert Settings
+              </Button>
+
+              {/* Trade Journal Button */}
+              <Button
+                onClick={() => window.location.href = "/journal"}
+                size="lg"
+                variant="outline"
+                className="border-2 border-indigo-500 text-indigo-700 hover:bg-indigo-50"
+              >
+                <BookOpen className="h-4 w-4 mr-2" />
+                Trade Journal
+              </Button>
+
               {/* Admin Button (only for admins) */}
               {user?.role === 'admin' && (
                 <Button
@@ -442,6 +464,26 @@ export default function Dashboard() {
               <TrendingUp className="h-4 w-4 mr-2" />
               Signal History
             </Button>
+
+            {/* Alert Settings and Trade Journal Buttons */}
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                onClick={() => window.location.href = "/settings/alerts"}
+                variant="outline"
+                className="border-2 border-purple-500 text-purple-700 hover:bg-purple-50"
+              >
+                <Bell className="h-4 w-4 mr-2" />
+                Alerts
+              </Button>
+              <Button
+                onClick={() => window.location.href = "/journal"}
+                variant="outline"
+                className="border-2 border-indigo-500 text-indigo-700 hover:bg-indigo-50"
+              >
+                <BookOpen className="h-4 w-4 mr-2" />
+                Journal
+              </Button>
+            </div>
 
             {/* Admin Button (mobile, only for admins) */}
             {user?.role === 'admin' && (

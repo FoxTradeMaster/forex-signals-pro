@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowDown, ArrowUp, TrendingUp, X, Clock } from "lucide-react";
+import { ArrowDown, ArrowUp, TrendingUp, X, Clock, BookOpen } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { PLBadge } from "@/components/PLBadge";
 import { useState, useEffect } from "react";
@@ -191,6 +191,34 @@ export function SignalCard({ signal, onDismiss, isPremium = false }: SignalCardP
             <p className="text-sm text-muted-foreground">{signal.reasoning}</p>
           </div>
         </div>
+
+        {/* Mark as Entered Button (only for premium users with unlocked signals) */}
+        {isPremium && !isLocked && (
+          <div className="pt-2 border-t">
+            <Button
+              onClick={() => {
+                // Create trade journal entry with signal data
+                const tradeData = {
+                  pair: signal.pair,
+                  signalType: signal.signalType,
+                  entryPrice: parseFloat(signal.entryPrice),
+                  stopLoss: parseFloat(signal.stopLoss),
+                  takeProfit: parseFloat(signal.takeProfit),
+                  signalId: signal.id,
+                  notes: `${signal.strategy} - ${signal.reasoning}`,
+                };
+                // Navigate to journal page with pre-filled data
+                window.location.href = `/journal?prefill=${encodeURIComponent(JSON.stringify(tradeData))}`;
+              }}
+              variant="outline"
+              className="w-full border-indigo-500 text-indigo-700 hover:bg-indigo-50"
+              size="sm"
+            >
+              <BookOpen className="h-4 w-4 mr-2" />
+              Mark as Entered
+            </Button>
+          </div>
+        )}
 
         {/* Timestamp */}
         <div className="text-xs text-muted-foreground text-right">

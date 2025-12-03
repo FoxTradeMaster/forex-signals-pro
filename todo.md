@@ -359,3 +359,37 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [ ] Add performance comparison: actual vs signals - future enhancement
 - [ ] Add export to CSV functionality - future enhancement
 - [ ] TypeScript errors will resolve after tRPC types regenerate in production
+
+## Phase 37: Add Navigation Links to Dashboard - COMPLETE ✅
+- [x] Add "Alert Settings" button to Dashboard header (desktop)
+- [x] Add "Trade Journal" button to Dashboard header (desktop)
+- [x] Add "Alert Settings" button to Dashboard header (mobile)
+- [x] Add "Trade Journal" button to Dashboard header (mobile)
+- [x] Use Bell icon for Alert Settings
+- [x] Use BookOpen icon for Trade Journal
+- [x] Style buttons to match existing header buttons (purple for Alerts, indigo for Journal)
+- [x] Add icons to imports from lucide-react
+- [ ] Test navigation to both pages in production
+
+## Phase 38: Add "Mark as Entered" Button to Signal Cards - COMPLETE ✅
+- [x] Add "Mark as Entered" button to SignalCard component
+- [x] Button only shows for premium users with unlocked signals
+- [x] Pre-fill trade form with signal data (pair, type, entry price, SL, TP, notes)
+- [x] Navigate to journal page with URL query parameter containing pre-filled data
+- [x] Add signalId to link trade with original signal
+- [x] TradeJournal page automatically opens New Trade dialog with pre-filled data
+- [x] Clear URL parameter after loading data
+- [x] Style button with indigo border to match Trade Journal branding
+- [x] Add BookOpen icon to imports
+- [ ] Test Mark as Entered button in production
+
+## Phase 39: Set Up Automated Alert Monitoring Cron Job - COMPLETE ✅
+- [x] Create cron job script (server/cron/checkAlerts.ts)
+- [x] Add cron configuration to render.yaml (runs every 5 minutes)
+- [x] Configure environment variables for cron job (DATABASE_URL, POLYGON_API_KEY, SENDGRID_API_KEY)
+- [x] Add error logging for failed alert checks
+- [x] Use tsx to run TypeScript directly in production
+- [ ] Test alert monitoring with test signals in production
+- [ ] Verify browser notifications work
+- [ ] Verify email notifications work
+- [ ] Monitor cron job execution in Render dashboard

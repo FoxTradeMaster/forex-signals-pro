@@ -23,14 +23,40 @@ import {
   AlertCircle
 } from "lucide-react";
 import { Link } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 export default function TradeJournal() {
   const { user, loading, isAuthenticated } = useAuth();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<any>(null);
+
+  // Check for pre-filled data from URL query parameter
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const prefillData = urlParams.get('prefill');
+    if (prefillData) {
+      try {
+        const data = JSON.parse(decodeURIComponent(prefillData));
+        setNewTrade(prev => ({
+          ...prev,
+          pair: data.pair || prev.pair,
+          tradeType: data.signalType || prev.tradeType,
+          entryPrice: data.entryPrice?.toString() || prev.entryPrice,
+          stopLoss: data.stopLoss?.toString() || prev.stopLoss,
+          takeProfit: data.takeProfit?.toString() || prev.takeProfit,
+          notes: data.notes || prev.notes,
+        }));
+        setIsCreateDialogOpen(true);
+        // Clear the URL parameter
+        window.history.replaceState({}, '', '/journal');
+      } catch (e) {
+        console.error('Failed to parse prefill data:', e);
+      }
+    }
+  }, []);
 
   // Form state for creating trade
   const [newTrade, setNewTrade] = useState({
