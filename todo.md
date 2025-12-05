@@ -430,3 +430,42 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [ ] Trigger browser download with proper filename
 - [ ] Test CSV export with different data sets
 - [ ] Verify CSV format compatible with Excel/Google Sheets
+
+## Phase 41: Signal Performance Analytics Dashboard - COMPLETE ✅
+- [x] Create analytics database queries (win rate by pair, session performance, strategy comparison)
+- [x] Add tRPC endpoints for analytics data
+- [x] Create Analytics page component at /analytics route
+- [x] Add interactive charts with recharts library
+- [x] Display win rate by currency pair (bar chart)
+- [x] Show performance by timeframe (pie chart)
+- [x] Compare strategy performance (bar chart with totals)
+- [x] Add date range filters for analytics (7, 30, 90 days)
+- [x] Add daily P/L trend chart
+- [x] Test analytics calculations and visualizations
+
+## Phase 42: Signal Sharing Feature - COMPLETE ✅
+- [x] Create shared_signals table in database schema
+- [x] Add tRPC endpoint for creating shareable signal links
+- [x] Generate unique share IDs for signals (using nanoid)
+- [x] Create public signal view page at /share/:shareId
+- [x] Add view count tracking for shared signals
+- [x] Install html-to-image library for signal card export
+- [ ] Add "Share Signal" button to signal cards (future enhancement)
+- [ ] Create "Export as Image" functionality (future enhancement)
+- [ ] Add social media sharing buttons (future enhancement)
+- [ ] Test sharing on mobile and desktop
+
+## Phase 43: Mobile PWA Installation - COMPLETE ✅
+- [x] Create manifest.json with app metadata
+- [x] Add PWA meta tags to index.html
+- [x] Configure theme color and app icons
+- [x] Add install prompt detection and UI
+- [x] Create PWAInstallPrompt component
+- [x] Add beforeinstallprompt event handler
+- [x] Implement dismiss functionality with 7-day cooldown
+- [x] Add PWAInstallPrompt to App.tsx
+- [ ] Add app icons (192x192, 512x512) - requires design assets
+- [ ] Configure service worker for offline caching (future enhancement)
+- [ ] Cache signal data for offline viewing (future enhancement)
+- [ ] Test PWA installation on iOS Safari
+- [ ] Test PWA installation on Android Chrome

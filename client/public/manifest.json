@@ -1,0 +1,62 @@
+{
+  "name": "FOX TRADE MASTER™ - Advanced Forex Trading Signals",
+  "short_name": "FOX TRADE MASTER",
+  "description": "Advanced Forex Trading Signals with 1 Pair Free Access",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#f97316",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "business"],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "View Signals",
+      "short_name": "Signals",
+      "description": "View active trading signals",
+      "url": "/",
+      "icons": [{ "src": "/logo-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Signal History",
+      "short_name": "History",
+      "description": "View historical performance",
+      "url": "/history",
+      "icons": [{ "src": "/logo-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Analytics",
+      "short_name": "Analytics",
+      "description": "View performance analytics",
+      "url": "/analytics",
+      "icons": [{ "src": "/logo-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

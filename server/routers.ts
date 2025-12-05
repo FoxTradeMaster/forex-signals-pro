@@ -7,7 +7,7 @@ import { fetchForexData, fetchAllForexData, fetchForexDataForUser, getPairSymbol
 import { getPairMarketStatus, isForexMarketOpen, getCurrentSessionName, formatTimeUntilOpen } from "./marketHours";
 import { SignalEngine } from "./signalEngine";
 import { MomentumWindowAnalyzer } from "./momentumWindow";
-import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist, getDb, getUser, getPaymentByEmail, linkPaymentToUser, getAllPayments, getAllUsers, updateUserSubscription, upsertSignalPerformance, getSignalPerformance, getHistoricalPerformance } from "./db";
+import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist, getDb, getUser, getPaymentByEmail, linkPaymentToUser, getAllPayments, getAllUsers, updateUserSubscription, upsertSignalPerformance, getSignalPerformance, getHistoricalPerformance, getWinRateByPair, getPerformanceByTimeframe, getStrategyPerformance, getDailyPLTrend, createSharedSignal, getSharedSignal, getUserSharedSignals } from "./db";
 import { users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { createPayPalOrder, capturePayPalOrder } from "./paypal";
@@ -942,6 +942,64 @@ export const appRouter = router({
         const { deleteUserTrade } = await import("./db");
         const success = await deleteUserTrade(input.tradeId);
         return { success };
+      }),
+  }),
+
+  // Analytics router
+  analytics: router({
+    // Get win rate by currency pair
+    getWinRateByPair: protectedProcedure
+      .input(z.object({ days: z.number().optional().default(30) }))
+      .query(async ({ input }) => {
+        return await getWinRateByPair(input.days);
+      }),
+
+    // Get performance by timeframe
+    getPerformanceByTimeframe: protectedProcedure
+      .input(z.object({ days: z.number().optional().default(30) }))
+      .query(async ({ input }) => {
+        return await getPerformanceByTimeframe(input.days);
+      }),
+
+    // Get strategy performance comparison
+    getStrategyPerformance: protectedProcedure
+      .input(z.object({ days: z.number().optional().default(30) }))
+      .query(async ({ input }) => {
+        return await getStrategyPerformance(input.days);
+      }),
+
+    // Get daily P/L trend
+    getDailyPLTrend: protectedProcedure
+      .input(z.object({ days: z.number().optional().default(30) }))
+      .query(async ({ input }) => {
+        return await getDailyPLTrend(input.days);
+      }),
+  }),
+
+  // Signal Sharing router
+  sharing: router({
+    // Create a shareable signal link
+    createShareLink: protectedProcedure
+      .input(z.object({ signalId: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        const result = await createSharedSignal(input.signalId, ctx.user.id);
+        if (!result) {
+          throw new Error("Failed to create share link");
+        }
+        return result;
+      }),
+
+    // Get shared signal by share ID (public)
+    getSharedSignal: publicProcedure
+      .input(z.object({ shareId: z.string() }))
+      .query(async ({ input }) => {
+        return await getSharedSignal(input.shareId);
+      }),
+
+    // Get user's shared signals
+    getMySharedSignals: protectedProcedure
+      .query(async ({ ctx }) => {
+        return await getUserSharedSignals(ctx.user.id);
       }),
   }),
 });

@@ -848,3 +848,320 @@ export async function updatePushSubscriptionLastUsed(id: string) {
     return false;
   }
 }
+
+/**
+ * Analytics Functions
+ */
+
+/**
+ * Get win rate by currency pair
+ */
+export async function getWinRateByPair(days = 30) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { signalPerformance, signals: signalsTable } = await import("../drizzle/schema");
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - days);
+
+  try {
+    const result = await db
+      .select({
+        pair: signalsTable.pair,
+        signalId: signalPerformance.signalId,
+        plDollars: signalPerformance.plDollars,
+      })
+      .from(signalPerformance)
+      .innerJoin(signalsTable, eq(signalPerformance.signalId, signalsTable.id))
+      .where(gte(signalPerformance.createdAt, cutoffDate));
+
+    // Group by pair and calculate win rate
+    const pairStats = result.reduce((acc, row) => {
+      const pair = row.pair;
+      if (!acc[pair]) {
+        acc[pair] = { total: 0, wins: 0 };
+      }
+      acc[pair].total++;
+      if (parseFloat(row.plDollars || "0") > 0) {
+        acc[pair].wins++;
+      }
+      return acc;
+    }, {} as Record<string, { total: number; wins: number }>);
+
+    // Convert to array format
+    return Object.entries(pairStats).map(([pair, stats]) => ({
+      pair,
+      totalSignals: stats.total,
+      wins: stats.wins,
+      losses: stats.total - stats.wins,
+      winRate: stats.total > 0 ? (stats.wins / stats.total) * 100 : 0,
+    })).sort((a, b) => b.winRate - a.winRate);
+  } catch (error) {
+    console.error("[Database] Failed to get win rate by pair:", error);
+    return [];
+  }
+}
+
+/**
+ * Get performance by trading session
+ */
+export async function getPerformanceByTimeframe(days = 30) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { signalPerformance, signals: signalsTable } = await import("../drizzle/schema");
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - days);
+
+  try {
+    const result = await db
+      .select({
+        timeframe: signalsTable.timeframe,
+        plDollars: signalPerformance.plDollars,
+      })
+      .from(signalPerformance)
+      .innerJoin(signalsTable, eq(signalPerformance.signalId, signalsTable.id))
+      .where(gte(signalPerformance.createdAt, cutoffDate));
+
+    // Group by timeframe
+    const timeframeStats = result.reduce((acc, row) => {
+      const timeframe = row.timeframe || "Unknown";
+      if (!acc[timeframe]) {
+        acc[timeframe] = { total: 0, totalPL: 0, wins: 0 };
+      }
+      acc[timeframe].total++;
+      const pl = parseFloat(row.plDollars || "0");
+      acc[timeframe].totalPL += pl;
+      if (pl > 0) acc[timeframe].wins++;
+      return acc;
+    }, {} as Record<string, { total: number; totalPL: number; wins: number }>);
+
+    // Convert to array format
+    return Object.entries(timeframeStats).map(([timeframe, stats]) => ({
+      timeframe,
+      totalSignals: stats.total,
+      totalPL: stats.totalPL,
+      avgPL: stats.total > 0 ? stats.totalPL / stats.total : 0,
+      winRate: stats.total > 0 ? (stats.wins / stats.total) * 100 : 0,
+    })).sort((a, b) => b.totalPL - a.totalPL);
+  } catch (error) {
+    console.error("[Database] Failed to get performance by timeframe:", error);
+    return [];
+  }
+}
+
+/**
+ * Get strategy performance comparison
+ */
+export async function getStrategyPerformance(days = 30) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { signalPerformance, signals: signalsTable } = await import("../drizzle/schema");
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - days);
+
+  try {
+    const result = await db
+      .select({
+        strategy: signalsTable.strategy,
+        plDollars: signalPerformance.plDollars,
+        createdAt: signalPerformance.createdAt,
+      })
+      .from(signalPerformance)
+      .innerJoin(signalsTable, eq(signalPerformance.signalId, signalsTable.id))
+      .where(gte(signalPerformance.createdAt, cutoffDate))
+      .orderBy(signalPerformance.createdAt);
+
+    // Group by strategy
+    const strategyStats = result.reduce((acc, row) => {
+      const strategy = row.strategy;
+      if (!acc[strategy]) {
+        acc[strategy] = { total: 0, totalPL: 0, wins: 0, dataPoints: [] };
+      }
+      acc[strategy].total++;
+      const pl = parseFloat(row.plDollars || "0");
+      acc[strategy].totalPL += pl;
+      if (pl > 0) acc[strategy].wins++;
+      
+      // Add data point for chart
+      acc[strategy].dataPoints.push({
+        date: row.createdAt,
+        pl: pl,
+      });
+      
+      return acc;
+    }, {} as Record<string, { total: number; totalPL: number; wins: number; dataPoints: Array<{ date: Date; pl: number }> }>);
+
+    // Convert to array format
+    return Object.entries(strategyStats).map(([strategy, stats]) => ({
+      strategy,
+      totalSignals: stats.total,
+      totalPL: stats.totalPL,
+      avgPL: stats.total > 0 ? stats.totalPL / stats.total : 0,
+      winRate: stats.total > 0 ? (stats.wins / stats.total) * 100 : 0,
+      dataPoints: stats.dataPoints,
+    })).sort((a, b) => b.totalPL - a.totalPL);
+  } catch (error) {
+    console.error("[Database] Failed to get strategy performance:", error);
+    return [];
+  }
+}
+
+/**
+ * Get daily P/L trend for chart
+ */
+export async function getDailyPLTrend(days = 30) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { signalPerformance } = await import("../drizzle/schema");
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - days);
+
+  try {
+    const result = await db
+      .select({
+        plDollars: signalPerformance.plDollars,
+        createdAt: signalPerformance.createdAt,
+      })
+      .from(signalPerformance)
+      .where(gte(signalPerformance.createdAt, cutoffDate))
+      .orderBy(signalPerformance.createdAt);
+
+    // Group by date
+    const dailyPL = result.reduce((acc, row) => {
+      const date = row.createdAt.toISOString().split('T')[0]; // YYYY-MM-DD
+      if (!acc[date]) {
+        acc[date] = 0;
+      }
+      acc[date] += parseFloat(row.plDollars || "0");
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Convert to array format and calculate cumulative
+    let cumulative = 0;
+    return Object.entries(dailyPL)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([date, pl]) => {
+        cumulative += pl;
+        return {
+          date,
+          dailyPL: pl,
+          cumulativePL: cumulative,
+        };
+      });
+  } catch (error) {
+    console.error("[Database] Failed to get daily P/L trend:", error);
+    return [];
+  }
+}
+
+/**
+ * Signal Sharing Functions
+ */
+
+/**
+ * Create a shareable signal link
+ */
+export async function createSharedSignal(signalId: string, userId: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { sharedSignals } = await import("../drizzle/schema");
+  const { nanoid } = await import("nanoid");
+
+  try {
+    // Generate short unique ID for URL
+    const shareId = nanoid(10);
+    const id = nanoid();
+
+    const newShare = {
+      id,
+      signalId,
+      shareId,
+      userId,
+      viewCount: "0",
+      createdAt: new Date(),
+    };
+
+    await db.insert(sharedSignals).values(newShare);
+    return { shareId, id };
+  } catch (error) {
+    console.error("[Database] Failed to create shared signal:", error);
+    return null;
+  }
+}
+
+/**
+ * Get shared signal by share ID
+ */
+export async function getSharedSignal(shareId: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { sharedSignals, signals: signalsTable } = await import("../drizzle/schema");
+
+  try {
+    const result = await db
+      .select({
+        sharedSignal: sharedSignals,
+        signal: signalsTable,
+      })
+      .from(sharedSignals)
+      .innerJoin(signalsTable, eq(sharedSignals.signalId, signalsTable.id))
+      .where(eq(sharedSignals.shareId, shareId))
+      .limit(1);
+
+    if (result.length === 0) return null;
+
+    // Increment view count
+    await db
+      .update(sharedSignals)
+      .set({
+        viewCount: (parseInt(result[0].sharedSignal.viewCount) + 1).toString(),
+      })
+      .where(eq(sharedSignals.shareId, shareId));
+
+    return {
+      ...result[0].signal,
+      viewCount: parseInt(result[0].sharedSignal.viewCount) + 1,
+      sharedBy: result[0].sharedSignal.userId,
+      sharedAt: result[0].sharedSignal.createdAt,
+    };
+  } catch (error) {
+    console.error("[Database] Failed to get shared signal:", error);
+    return null;
+  }
+}
+
+/**
+ * Get user's shared signals
+ */
+export async function getUserSharedSignals(userId: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { sharedSignals, signals: signalsTable } = await import("../drizzle/schema");
+
+  try {
+    const result = await db
+      .select({
+        shareId: sharedSignals.shareId,
+        viewCount: sharedSignals.viewCount,
+        createdAt: sharedSignals.createdAt,
+        pair: signalsTable.pair,
+        signalType: signalsTable.signalType,
+        strength: signalsTable.strength,
+      })
+      .from(sharedSignals)
+      .innerJoin(signalsTable, eq(sharedSignals.signalId, signalsTable.id))
+      .where(eq(sharedSignals.userId, userId))
+      .orderBy(desc(sharedSignals.createdAt));
+
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to get user shared signals:", error);
+    return [];
+  }
+}

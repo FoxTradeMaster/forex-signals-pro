@@ -207,3 +207,19 @@ export const userPushSubscriptions = pgTable("user_push_subscriptions", {
 
 export type UserPushSubscription = typeof userPushSubscriptions.$inferSelect;
 export type InsertUserPushSubscription = typeof userPushSubscriptions.$inferInsert;
+
+/**
+ * Shared signals table - stores shareable signal links
+ */
+export const sharedSignals = pgTable("shared_signals", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  signalId: varchar("signalId", { length: 64 }).notNull(),
+  shareId: varchar("shareId", { length: 32 }).notNull().unique(), // Short unique ID for URL
+  userId: varchar("userId", { length: 64 }).notNull(), // User who shared the signal
+  viewCount: varchar("viewCount", { length: 10 }).default("0").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt"), // Optional expiration
+});
+
+export type SharedSignal = typeof sharedSignals.$inferSelect;
+export type InsertSharedSignal = typeof sharedSignals.$inferInsert;
