@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAudioNotification } from "@/hooks/useAudioNotification";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { RefreshCw, Volume2, VolumeX, TrendingUp, Clock, Zap, Filter, Crown, Search, Bell, BookOpen } from "lucide-react";
+import { RefreshCw, Volume2, VolumeX, TrendingUp, Clock, Zap, Filter, Crown, Search, Bell, BookOpen, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Dashboard() {
@@ -249,7 +249,7 @@ export default function Dashboard() {
             </div>
 
             {/* Row 2: Action Buttons */}
-            <div className="flex items-center justify-center gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:flex items-center justify-center gap-3">
               <Button
                 onClick={handleGenerateSignals}
                 disabled={generateSignals.isPending}
@@ -313,6 +313,17 @@ export default function Dashboard() {
               >
                 <BookOpen className="h-4 w-4 mr-2" />
                 Trade Journal
+              </Button>
+
+              {/* Analytics Button */}
+              <Button
+                onClick={() => window.location.href = "/analytics"}
+                size="lg"
+                variant="outline"
+                className="border-2 border-blue-500 text-blue-700 hover:bg-blue-50"
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Analytics
               </Button>
 
               {/* Admin Button (only for admins) */}
@@ -465,23 +476,28 @@ export default function Dashboard() {
               Signal History
             </Button>
 
-            {/* Alert Settings and Trade Journal Buttons */}
-            <div className="grid grid-cols-2 gap-2">
+            {/* Alert Settings, Trade Journal, and Analytics Buttons */}
+            <div className="grid grid-cols-3 gap-2">
               <Button
                 onClick={() => window.location.href = "/settings/alerts"}
                 variant="outline"
                 className="border-2 border-purple-500 text-purple-700 hover:bg-purple-50"
               >
-                <Bell className="h-4 w-4 mr-2" />
-                Alerts
+                <Bell className="h-4 w-4" />
               </Button>
               <Button
                 onClick={() => window.location.href = "/journal"}
                 variant="outline"
                 className="border-2 border-indigo-500 text-indigo-700 hover:bg-indigo-50"
               >
-                <BookOpen className="h-4 w-4 mr-2" />
-                Journal
+                <BookOpen className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={() => window.location.href = "/analytics"}
+                variant="outline"
+                className="border-2 border-blue-500 text-blue-700 hover:bg-blue-50"
+              >
+                <BarChart3 className="h-4 w-4" />
               </Button>
             </div>
 
