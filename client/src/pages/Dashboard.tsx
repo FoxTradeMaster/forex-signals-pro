@@ -249,12 +249,11 @@ export default function Dashboard() {
             </div>
 
             {/* Row 2: Action Buttons */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:flex items-center justify-center gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 max-w-full px-2">
               <Button
                 onClick={handleGenerateSignals}
                 disabled={generateSignals.isPending}
-                size="lg"
-                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 md:text-sm lg:text-base px-3 md:px-4 py-2"
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${generateSignals.isPending ? "animate-spin" : ""}`} />
                 Generate Signals
@@ -263,9 +262,8 @@ export default function Dashboard() {
               {/* VPS Button */}
               <Button
                 onClick={() => window.open('https://www.forexvps.net/?aff=110088', '_blank')}
-                size="lg"
                 variant="outline"
-                className="border-2"
+                className="border-2 md:text-sm lg:text-base px-3 md:px-4 py-2"
               >
                 <span className="mr-2 text-lg">🖥️</span>
                 VPS
@@ -274,9 +272,8 @@ export default function Dashboard() {
               {/* Mastering Forex Signals Book Button */}
               <Button
                 onClick={() => window.open('https://read.amazon.com/sample/B0FWZL9Z72?clientId=share', '_blank')}
-                size="lg"
                 variant="outline"
-                className="border-2 border-green-500 text-green-700 hover:bg-green-50"
+                className="border-2 border-green-500 text-green-700 hover:bg-green-50 md:text-sm lg:text-base px-3 md:px-4 py-2"
               >
                 <span className="mr-2 text-lg">📚</span>
                 Mastering Forex Signals Book
@@ -285,9 +282,8 @@ export default function Dashboard() {
               {/* Signal History Button */}
               <Button
                 onClick={() => window.location.href = "/history"}
-                size="lg"
                 variant="outline"
-                className="border-2 border-blue-500 text-blue-700 hover:bg-blue-50"
+                className="border-2 border-blue-500 text-blue-700 hover:bg-blue-50 md:text-sm lg:text-base px-3 md:px-4 py-2"
               >
                 <TrendingUp className="h-4 w-4 mr-2" />
                 Signal History
@@ -296,9 +292,8 @@ export default function Dashboard() {
               {/* Alert Settings Button */}
               <Button
                 onClick={() => window.location.href = "/settings/alerts"}
-                size="lg"
                 variant="outline"
-                className="border-2 border-purple-500 text-purple-700 hover:bg-purple-50"
+                className="border-2 border-purple-500 text-purple-700 hover:bg-purple-50 md:text-sm lg:text-base px-3 md:px-4 py-2"
               >
                 <Bell className="h-4 w-4 mr-2" />
                 Alert Settings
@@ -307,9 +302,8 @@ export default function Dashboard() {
               {/* Trade Journal Button */}
               <Button
                 onClick={() => window.location.href = "/journal"}
-                size="lg"
                 variant="outline"
-                className="border-2 border-indigo-500 text-indigo-700 hover:bg-indigo-50"
+                className="border-2 border-indigo-500 text-indigo-700 hover:bg-indigo-50 md:text-sm lg:text-base px-3 md:px-4 py-2"
               >
                 <BookOpen className="h-4 w-4 mr-2" />
                 Trade Journal
@@ -318,9 +312,8 @@ export default function Dashboard() {
               {/* Analytics Button */}
               <Button
                 onClick={() => window.location.href = "/analytics"}
-                size="lg"
                 variant="outline"
-                className="border-2 border-blue-500 text-blue-700 hover:bg-blue-50"
+                className="border-2 border-blue-500 text-blue-700 hover:bg-blue-50 md:text-sm lg:text-base px-3 md:px-4 py-2"
               >
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Analytics
@@ -331,8 +324,7 @@ export default function Dashboard() {
                 <Button
                   onClick={() => window.location.href = "/admin"}
                   variant="outline"
-                  size="lg"
-                  className="border-red-500 text-red-600 hover:bg-red-50"
+                  className="border-red-500 text-red-600 hover:bg-red-50 md:text-sm lg:text-base px-3 md:px-4 py-2"
                 >
                   ⚙️ Admin
                 </Button>
