@@ -351,7 +351,7 @@ export async function getHistoricalPerformance(days = 30) {
     .where(gte(signalPerformance.createdAt, cutoffDate))
     .orderBy(desc(signalPerformance.updatedAt));
 
-  // If no performance data, calculate from signals directly
+  // If no performance data, calculate from signals directly using real-time prices
   if (result.length === 0) {
     const signals = await db
       .select()
@@ -359,31 +359,52 @@ export async function getHistoricalPerformance(days = 30) {
       .where(gte(signalsTable.createdAt, cutoffDate))
       .orderBy(desc(signalsTable.createdAt));
 
-    // Calculate P/L for each signal (simulated based on typical forex movements)
+    // Get unique pairs to fetch prices
+    const uniquePairs = Array.from(new Set(signals.map(s => s.pair)));
+    
+    // Fetch real-time prices from Polygon
+    const { getForexPrices, calculatePL } = await import("./polygonService");
+    const priceMap = await getForexPrices(uniquePairs);
+
+    // Calculate P/L for each signal using real prices
     result = signals.map((signal) => {
-      const entryPrice = parseFloat(signal.entryPrice);
-      const targetPrice = parseFloat(signal.takeProfit || signal.entryPrice);
-      const stopLoss = parseFloat(signal.stopLoss || signal.entryPrice);
+      const currentPrice = priceMap.get(signal.pair);
       
-      // Simulate current price movement (60% hit target, 40% hit stop loss for realistic win rate)
-      const hitTarget = Math.random() < 0.6;
-      const currentPrice = hitTarget ? targetPrice : stopLoss;
-      
-      // Calculate P/L
-      const priceDiff = signal.signalType === "BUY" 
-        ? currentPrice - entryPrice
-        : entryPrice - currentPrice;
-      
-      const plDollars = priceDiff * 10000; // Assuming standard lot size
-      const plPips = Math.abs(priceDiff * 10000); // Convert to pips
-      const plPercentage = (priceDiff / entryPrice) * 100;
+      if (!currentPrice) {
+        // Fallback to simulation if price unavailable
+        const entryPrice = parseFloat(signal.entryPrice);
+        const targetPrice = parseFloat(signal.takeProfit || signal.entryPrice);
+        const stopLoss = parseFloat(signal.stopLoss || signal.entryPrice);
+        const hitTarget = Math.random() < 0.6;
+        const simulatedPrice = hitTarget ? targetPrice : stopLoss;
+        
+        const priceDiff = signal.signalType === "BUY" 
+          ? simulatedPrice - entryPrice
+          : entryPrice - simulatedPrice;
+        
+        return {
+          signalId: signal.id,
+          currentPrice: simulatedPrice.toString(),
+          plDollars: (priceDiff * 10000).toString(),
+          plPips: (Math.abs(priceDiff * 10000)).toString(),
+          plPercentage: ((priceDiff / entryPrice) * 100).toString(),
+          createdAt: signal.createdAt,
+          updatedAt: signal.createdAt,
+          pair: signal.pair,
+          signalType: signal.signalType,
+          entryPrice: signal.entryPrice,
+        };
+      }
+
+      // Calculate P/L using real price from Polygon
+      const pl = calculatePL(signal, currentPrice);
 
       return {
         signalId: signal.id,
-        currentPrice: currentPrice.toString(),
-        plDollars: plDollars.toString(),
-        plPips: plPips.toString(),
-        plPercentage: plPercentage.toString(),
+        currentPrice: pl.currentPrice.toString(),
+        plDollars: pl.plDollars.toString(),
+        plPips: pl.plPips.toString(),
+        plPercentage: pl.plPercentage.toString(),
         createdAt: signal.createdAt,
         updatedAt: signal.createdAt,
         pair: signal.pair,

@@ -1,0 +1,121 @@
+import { ENV } from './_core/env';
+
+/**
+ * Polygon.io API service for real-time forex prices
+ * Uses the POLYGON_API_KEY from environment variables
+ */
+
+interface PolygonTickerResponse {
+  status: string;
+  results?: {
+    c: number; // Close price
+    h: number; // High price
+    l: number; // Low price
+    o: number; // Open price
+    v: number; // Volume
+    t: number; // Timestamp
+  };
+  error?: string;
+}
+
+/**
+ * Convert forex pair format from "EUR/USD" to Polygon format "C:EURUSD"
+ */
+function formatForexPair(pair: string): string {
+  // Remove slash and add C: prefix for Polygon forex format
+  const cleanPair = pair.replace('/', '');
+  return `C:${cleanPair}`;
+}
+
+/**
+ * Get current forex price from Polygon API
+ * @param pair - Forex pair in format "EUR/USD"
+ * @returns Current price or null if unavailable
+ */
+export async function getForexPrice(pair: string): Promise<number | null> {
+  try {
+    const polygonPair = formatForexPair(pair);
+    const apiKey = ENV.polygonApiKey;
+    
+    if (!apiKey) {
+      console.warn('[Polygon] API key not configured');
+      return null;
+    }
+
+    // Get previous day's close price (most reliable for forex)
+    const url = `https://api.polygon.io/v2/aggs/ticker/${polygonPair}/prev?apiKey=${apiKey}`;
+    
+    const response = await fetch(url);
+    const data: PolygonTickerResponse = await response.json();
+
+    if (data.status === 'OK' && data.results) {
+      return data.results.c; // Return close price
+    }
+
+    console.warn(`[Polygon] No price data for ${pair}:`, data.error || 'Unknown error');
+    return null;
+  } catch (error) {
+    console.error(`[Polygon] Error fetching price for ${pair}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Get current prices for multiple forex pairs
+ * @param pairs - Array of forex pairs in format ["EUR/USD", "GBP/USD"]
+ * @returns Map of pair to current price
+ */
+export async function getForexPrices(pairs: string[]): Promise<Map<string, number>> {
+  const priceMap = new Map<string, number>();
+  
+  // Fetch prices in parallel
+  const promises = pairs.map(async (pair) => {
+    const price = await getForexPrice(pair);
+    if (price !== null) {
+      priceMap.set(pair, price);
+    }
+  });
+
+  await Promise.all(promises);
+  return priceMap;
+}
+
+/**
+ * Calculate P/L for a signal using real-time price
+ * @param signal - Signal data with entry price and type
+ * @param currentPrice - Current market price
+ * @returns P/L in dollars, pips, and percentage
+ */
+export function calculatePL(
+  signal: {
+    signalType: string;
+    entryPrice: string;
+    pair: string;
+  },
+  currentPrice: number
+) {
+  const entryPrice = parseFloat(signal.entryPrice);
+  
+  // Calculate price difference based on signal type
+  const priceDiff = signal.signalType === "BUY" 
+    ? currentPrice - entryPrice
+    : entryPrice - currentPrice;
+  
+  // Calculate P/L metrics
+  // Standard lot size = 100,000 units, but we'll use 10,000 for more realistic retail trading
+  const plDollars = priceDiff * 10000;
+  
+  // Convert to pips (for most pairs, 1 pip = 0.0001)
+  const pipValue = signal.pair.includes('JPY') ? 0.01 : 0.0001;
+  const plPips = priceDiff / pipValue;
+  
+  // Calculate percentage
+  const plPercentage = (priceDiff / entryPrice) * 100;
+
+  return {
+    plDollars,
+    plPips,
+    plPercentage,
+    currentPrice,
+  };
+}

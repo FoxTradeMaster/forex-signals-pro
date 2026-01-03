@@ -495,3 +495,13 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Added fallback logic: calculates P/L from signals directly (60% win rate simulation)
 - [x] Stats now update automatically when signals are generated
 - [x] Uses entry price, take profit, and stop loss to calculate realistic P/L
+
+
+## Phase 47: Polygon Real-Time Price Updates - COMPLETE ✅
+- [x] Create Polygon price fetching service (polygonService.ts)
+- [x] Add function to get current forex prices from Polygon API
+- [x] Update getHistoricalPerformance to use real prices instead of simulation
+- [x] Handle Polygon API rate limits and errors (with fallback to simulation)
+- [x] Added POLYGON_API_KEY to ENV configuration
+- [x] Implemented calculatePL function for accurate P/L calculations
+- [x] Support for both standard and JPY pairs (different pip values)

@@ -10,4 +10,5 @@ export const ENV = {
   sendgridApiKey: process.env.SENDGRID_API_KEY ?? "",
   fromEmail: process.env.FROM_EMAIL ?? "",
   frontendUrl: process.env.FRONTEND_URL ?? "https://forex-signals-pro.onrender.com",
+  polygonApiKey: process.env.POLYGON_API_KEY ?? "",
 };
