@@ -393,6 +393,40 @@ export const appRouter = router({
         await deactivateSignal(input.signalId);
         return { success: true };
       }),
+
+    // Get active signals with real-time status
+    getWithStatus: publicProcedure
+      .input(z.object({ limit: z.number().optional() }))
+      .query(async ({ input }) => {
+        const signals = await getActiveSignals(input.limit);
+        
+        // Get unique pairs to fetch prices
+        const uniquePairs = Array.from(new Set(signals.map(s => s.pair)));
+        
+        // Fetch real-time prices from Polygon
+        const { getForexPrices, getSignalStatus, calculatePL } = await import("./polygonService");
+        const priceMap = await getForexPrices(uniquePairs);
+
+        return signals.map(s => {
+          const currentPrice = priceMap.get(s.pair);
+          let status: "target_hit" | "stop_loss_hit" | "active" = "active";
+          let plDollars = 0;
+
+          if (currentPrice) {
+            status = getSignalStatus(s, currentPrice);
+            const pl = calculatePL(s, currentPrice);
+            plDollars = pl.plDollars;
+          }
+
+          return {
+            ...s,
+            indicators: JSON.parse(s.indicators),
+            status,
+            currentPrice,
+            plDollars,
+          };
+        });
+      }),
   }),
 
   watchlist: router({

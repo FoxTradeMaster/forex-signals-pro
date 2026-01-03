@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { SignalCard } from "@/components/SignalCard";
 import { ExpiryBanner } from "@/components/ExpiryBanner";
 import { PerformanceStats } from "@/components/PerformanceStats";
+import { PerformanceChart } from "@/components/PerformanceChart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -540,6 +541,9 @@ export default function Dashboard() {
 
         {/* Performance Stats (only for premium users) */}
         {isPremium && <PerformanceStats />}
+        
+        {/* Performance Chart (only for premium users) */}
+        {isPremium && <PerformanceChart />}
 
         {/* Current Session Banner */}
         {currentSession && (

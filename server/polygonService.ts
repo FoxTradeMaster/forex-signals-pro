@@ -119,3 +119,42 @@ export function calculatePL(
     currentPrice,
   };
 }
+
+
+/**
+ * Determine signal status based on current price vs target/stop loss
+ * @param signal - Signal data
+ * @param currentPrice - Current market price
+ * @returns Signal status: target_hit, stop_loss_hit, or active
+ */
+export function getSignalStatus(
+  signal: {
+    signalType: string;
+    entryPrice: string;
+    takeProfit: string;
+    stopLoss: string;
+  },
+  currentPrice: number
+): "target_hit" | "stop_loss_hit" | "active" {
+  const entryPrice = parseFloat(signal.entryPrice);
+  const targetPrice = parseFloat(signal.takeProfit);
+  const stopLoss = parseFloat(signal.stopLoss);
+
+  if (signal.signalType === "BUY") {
+    // For BUY signals: target is above entry, stop loss is below
+    if (currentPrice >= targetPrice) {
+      return "target_hit";
+    } else if (currentPrice <= stopLoss) {
+      return "stop_loss_hit";
+    }
+  } else {
+    // For SELL signals: target is below entry, stop loss is above
+    if (currentPrice <= targetPrice) {
+      return "target_hit";
+    } else if (currentPrice >= stopLoss) {
+      return "stop_loss_hit";
+    }
+  }
+
+  return "active";
+}

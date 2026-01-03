@@ -1,11 +1,15 @@
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
-import { TrendingUp, Target, DollarSign, Award } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TrendingUp, Target, DollarSign, Award, RefreshCw } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export function PerformanceStats() {
   const [mounted, setMounted] = useState(false);
-  const { data: historicalData } = trpc.pl.getHistoricalPerformance.useQuery(
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  const { data: historicalData, refetch } = trpc.pl.getHistoricalPerformance.useQuery(
     { days: 30 },
     { enabled: mounted }
   );
@@ -13,6 +17,38 @@ export function PerformanceStats() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Auto-refresh every 10 minutes
+  useEffect(() => {
+    if (!mounted) return;
+
+    const interval = setInterval(async () => {
+      await refetch();
+      setLastUpdate(new Date());
+    }, 10 * 60 * 1000); // 10 minutes
+
+    return () => clearInterval(interval);
+  }, [mounted, refetch]);
+
+  // Manual refresh handler
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refetch();
+    setLastUpdate(new Date());
+    setIsRefreshing(false);
+  };
+
+  // Format last update time
+  const formatLastUpdate = () => {
+    const now = new Date();
+    const diffMs = now.getTime() - lastUpdate.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return "Just now";
+    if (diffMins === 1) return "1 minute ago";
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    return lastUpdate.toLocaleTimeString();
+  };
 
   if (!mounted || !historicalData || historicalData.totalSignals === 0) {
     return null;
@@ -41,13 +77,30 @@ export function PerformanceStats() {
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <Award className="w-5 h-5" />
-          30-Day Performance
-        </h2>
-        <span className={`text-sm font-semibold ${badgeColor}`}>
-          {credibilityBadge}
-        </span>
+        <div>
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Award className="w-5 h-5" />
+            30-Day Performance
+          </h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            Last updated: {formatLastUpdate()}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className={`text-sm font-semibold ${badgeColor}`}>
+            {credibilityBadge}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="flex items-center gap-1"
+          >
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

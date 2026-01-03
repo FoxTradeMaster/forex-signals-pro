@@ -505,3 +505,29 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Added POLYGON_API_KEY to ENV configuration
 - [x] Implemented calculatePL function for accurate P/L calculations
 - [x] Support for both standard and JPY pairs (different pip values)
+
+
+## Phase 48: Performance History Chart - COMPLETE ✅
+- [x] Create PerformanceChart component with recharts
+- [x] Add cumulative P/L line chart to Dashboard
+- [x] Show 30-day trend with daily data points
+- [x] Add hover tooltips showing date and P/L
+- [x] Style chart to match Dashboard theme
+- [x] Display total P/L and average per day
+- [x] Color-coded line (green for profit, red for loss)
+
+## Phase 49: Signal Status Badges - COMPLETE ✅
+- [x] Add getSignalStatus function using Polygon prices
+- [x] Create SignalStatusBadge component (Target Hit ✅, Stop Loss Hit ❌, Active 📈)
+- [x] Add getWithStatus endpoint to signals router
+- [x] Fetch real-time prices and calculate status for each signal
+- [x] Color code badges (green for profit, red for loss, blue for active)
+- [x] Display current price and P/L in badges
+
+## Phase 50: Auto-Refresh Stats - COMPLETE ✅
+- [x] Add auto-refresh interval to PerformanceStats component
+- [x] Implement background price updates every 10 minutes
+- [x] Add visual indicator showing last update time ("Just now", "X minutes ago")
+- [x] Ensure efficient API usage (batch requests via getForexPrices)
+- [x] Add manual refresh button with spinning icon
+- [x] Prevent multiple simultaneous refreshes with isRefreshing state
