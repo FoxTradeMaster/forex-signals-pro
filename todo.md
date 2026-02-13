@@ -542,3 +542,12 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Added fallback to database if Polygon API fails
 - [x] Test P/L calculation with real 10-day-old signals
 - [x] Ready to deploy fix to Render
+
+
+## Phase 52: Make P/L Badges Visible to All Users - COMPLETE ✅
+- [x] Remove isPremium gate from P/L badge display in SignalCard
+- [x] Show P/L badges for all users on all signal pairs (including locked pairs)
+- [x] Keep P/L calculation using real Polygon prices
+- [x] Changed query enabled condition from `mounted && isPremium && !isLocked` to just `mounted`
+- [x] Updated comment to reflect P/L is now a teaser for all users
+- [x] Ready to deploy to Render

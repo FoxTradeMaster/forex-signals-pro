@@ -37,10 +37,10 @@ export function SignalCard({ signal, onDismiss, isPremium = false }: SignalCardP
   // Check if this pair is locked (not EUR/USD and user is not premium)
   const isLocked = signal.pair !== "EUR/USD" && !isPremium;
 
-  // Fetch P/L data (only for premium users)
+  // Fetch P/L data (for all users as a teaser)
   const { data: plData } = trpc.pl.getSignalPerformance.useQuery(
     { signalId: signal.id },
-    { enabled: mounted && isPremium && !isLocked }
+    { enabled: mounted }
   );
 
   useEffect(() => {
@@ -105,8 +105,8 @@ export function SignalCard({ signal, onDismiss, isPremium = false }: SignalCardP
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* P/L Badge (only for premium users with unlocked signals) */}
-            {mounted && isPremium && !isLocked && plData && (
+            {/* P/L Badge (visible to all users as a teaser) */}
+            {mounted && plData && (
               <PLBadge
                 plDollars={parseFloat(plData.plDollars || "0")}
                 plPips={parseFloat(plData.plPips || "0")}
