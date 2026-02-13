@@ -302,16 +302,45 @@ export async function getSignalPerformance(signalId: string) {
   const db = await getDb();
   if (!db) return null;
 
-  const { signalPerformance } = await import("../drizzle/schema");
-  const id = `perf-${signalId}`;
-
-  const result = await db
+  // Get the signal data
+  const signalResult = await db
     .select()
-    .from(signalPerformance)
-    .where(eq(signalPerformance.id, id))
+    .from(signals)
+    .where(eq(signals.id, signalId))
     .limit(1);
 
-  return result.length > 0 ? result[0] : null;
+  if (signalResult.length === 0) return null;
+
+  const signal = signalResult[0];
+
+  // Fetch current price from Polygon
+  const { getForexPrice, calculatePL } = await import("./polygonService");
+  const currentPrice = await getForexPrice(signal.pair);
+
+  if (!currentPrice) {
+    // Fallback to database if Polygon fails
+    const { signalPerformance } = await import("../drizzle/schema");
+    const id = `perf-${signalId}`;
+    const result = await db
+      .select()
+      .from(signalPerformance)
+      .where(eq(signalPerformance.id, id))
+      .limit(1);
+    return result.length > 0 ? result[0] : null;
+  }
+
+  // Calculate real-time P/L
+  const pl = calculatePL(signal, currentPrice);
+
+  return {
+    id: `perf-${signalId}`,
+    signalId: signalId,
+    currentPrice: currentPrice.toString(),
+    plDollars: pl.plDollars.toString(),
+    plPips: pl.plPips.toString(),
+    plPercentage: pl.plPercentage.toString(),
+    updatedAt: new Date(),
+  };
 }
 
 export async function getHistoricalPerformance(days = 30) {

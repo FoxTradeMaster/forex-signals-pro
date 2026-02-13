@@ -531,3 +531,14 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Ensure efficient API usage (batch requests via getForexPrices)
 - [x] Add manual refresh button with spinning icon
 - [x] Prevent multiple simultaneous refreshes with isRefreshing state
+
+
+## Phase 51: Fix P/L Calculation Showing Zero - COMPLETE ✅
+- [x] Investigate why P/L badges show +0.00 USD and +0.0 pips
+- [x] Check if Polygon API is being called correctly for current prices
+- [x] Verify calculatePL function logic in polygonService
+- [x] Modified getSignalPerformance to fetch real-time Polygon prices
+- [x] Calculate P/L on-the-fly instead of using stale database values
+- [x] Added fallback to database if Polygon API fails
+- [x] Test P/L calculation with real 10-day-old signals
+- [x] Ready to deploy fix to Render
