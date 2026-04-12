@@ -17,6 +17,14 @@ import { sendMagicLinkEmail } from "./_core/sendMagicLinkEmail";
 import jwt from "jsonwebtoken";
 import { ENV } from "./_core/env";
 import { aiRouter } from "./routers/aiRouter";
+import { generateAISignal, checkAndLearnFromResolvedSignals } from "./aiSignalEngine";
+
+// Top major pairs to enhance with AI reasoning (fast, high-value)
+const AI_PRIORITY_PAIRS = [
+  "EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF",
+  "AUD/USD", "USD/CAD", "NZD/USD", "EUR/GBP",
+  "EUR/JPY", "GBP/JPY",
+];
 
 export const appRouter = router({
   system: systemRouter,
@@ -284,17 +292,63 @@ export const appRouter = router({
   }),
 
   signals: router({
-    // Generate signals for all pairs
+    // Generate signals for all pairs (with AI enhancement on priority pairs)
     generateAll: publicProcedure.mutation(async () => {
       // Clear old signals first
       await clearAllSignals();
 
+      // ── Step 1: Run AI signal generation on priority pairs in parallel ──
+      console.log("[Signal Gen] Running AI analysis on priority pairs...");
+      const aiResults = await Promise.allSettled(
+        AI_PRIORITY_PAIRS.map(pair => generateAISignal(pair))
+      );
+
+      const aiSignals = aiResults
+        .map((r, i) => r.status === "fulfilled" ? r.value : null)
+        .filter((s): s is NonNullable<typeof s> => s !== null);
+
+      const aiPairsWithSignals = new Set(aiSignals.map(s => s.pair));
+      console.log(`[Signal Gen] AI generated ${aiSignals.length} signals for priority pairs`);
+
+      // ── Step 2: Run standard engine for all remaining pairs ──
       const forexData = await fetchAllForexData("pro", "1h", "5d");
       const engine = new SignalEngine();
-      const signals = engine.generateMultipleSignals(forexData);
+      const standardSignals = engine.generateMultipleSignals(forexData)
+        .filter(s => !aiPairsWithSignals.has(s.pair)); // skip pairs already covered by AI
 
-      // Save signals to database
-      for (const signal of signals) {
+      // ── Step 3: Save AI signals to database ──
+      for (const signal of aiSignals) {
+        await saveSignal({
+          id: signal.id,
+          pair: signal.pair,
+          signalType: signal.signalType,
+          strength: signal.strength.toString(),
+          strategy: signal.strategy,
+          entryPrice: signal.entryPrice.toString(),
+          stopLoss: signal.stopLoss.toString(),
+          takeProfit: signal.takeProfit.toString(),
+          timeframe: signal.timeframe,
+          reason: signal.aiReasoning,
+          indicators: JSON.stringify(signal.indicators),
+          isActive: "true",
+          aiReasoning: signal.aiReasoning,
+          aiConfidence: signal.aiConfidence.toString(),
+          aiKeyFactors: JSON.stringify(signal.aiKeyFactors),
+          aiInsight: signal.aiInsight,
+          isAiGenerated: "true",
+        });
+
+        await upsertSignalPerformance({
+          signalId: signal.id,
+          currentPrice: signal.entryPrice.toString(),
+          plDollars: "0",
+          plPips: "0",
+          plPercentage: "0",
+        });
+      }
+
+      // ── Step 4: Save standard signals to database ──
+      for (const signal of standardSignals) {
         await saveSignal({
           id: signal.id,
           pair: signal.pair,
@@ -308,9 +362,9 @@ export const appRouter = router({
           reason: signal.reason,
           indicators: JSON.stringify(signal.indicators),
           isActive: "true",
+          isAiGenerated: "false",
         });
 
-        // Create initial P/L tracking record (P/L = 0 at entry)
         await upsertSignalPerformance({
           signalId: signal.id,
           currentPrice: signal.entryPrice.toString(),
@@ -320,7 +374,18 @@ export const appRouter = router({
         });
       }
 
-      return signals;
+      // ── Step 5: Trigger learning from any resolved signals (non-blocking) ──
+      checkAndLearnFromResolvedSignals().catch(e =>
+        console.warn("[Signal Gen] Learning cycle error (non-critical):", e)
+      );
+
+      // Return combined list (AI signals first, then standard)
+      const allSaved = [
+        ...aiSignals.map(s => ({ ...s, isAiGenerated: true })),
+        ...standardSignals.map(s => ({ ...s, isAiGenerated: false })),
+      ];
+      console.log(`[Signal Gen] Total: ${aiSignals.length} AI + ${standardSignals.length} standard = ${allSaved.length} signals`);
+      return allSaved;
     }),
 
     // Generate signals for a specific pair

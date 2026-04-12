@@ -566,3 +566,15 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Add AI Brain navigation button to Dashboard (desktop + mobile)
 - [x] Vitest tests written and passing (5/5)
 - [ ] Create checkpoint and deploy
+
+## Phase 53: Wire AI into Live Signal Feed + Deploy to Render
+- [x] Review current generateAll mutation and signal engine flow
+- [x] Integrate aiSignalEngine.generateAISignal() into generateAll mutation
+- [x] Add parallel batch processing for AI analysis (avoid sequential slowness)
+- [x] Store AI reasoning (aiReasoning, aiConfidence, aiKeyFactors, aiInsight, isAiGenerated) in signals table
+- [x] Update SignalCard to show AI reasoning badge, confidence score, key factors, expandable reasoning
+- [x] TypeScript compiles clean (0 errors)
+- [ ] Push latest code to GitHub repository
+- [ ] Verify Render auto-deployment triggers
+- [ ] Run database migration on Render for AI brain tables
+- [ ] Test AI signals appearing in live dashboard

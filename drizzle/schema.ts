@@ -42,6 +42,12 @@ export const signals = pgTable("signals", {
   indicators: text("indicators").notNull(), // JSON string
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   isActive: varchar("isActive", { length: 5 }).default("true").notNull(), // true/false as string
+  // AI brain fields (optional - only present on AI-generated signals)
+  aiReasoning: text("aiReasoning"),           // LLM reasoning explanation
+  aiConfidence: varchar("aiConfidence", { length: 10 }), // 0-100 confidence score
+  aiKeyFactors: text("aiKeyFactors"),         // JSON array of key factors
+  aiInsight: text("aiInsight"),               // AI market insight
+  isAiGenerated: varchar("isAiGenerated", { length: 5 }).default("false"), // true/false
 });
 
 export type Signal = typeof signals.$inferSelect;

@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowDown, ArrowUp, TrendingUp, X, Clock, BookOpen } from "lucide-react";
+import { ArrowDown, ArrowUp, TrendingUp, X, Clock, BookOpen, Brain, ChevronDown, ChevronUp } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { PLBadge } from "@/components/PLBadge";
 import { useState, useEffect } from "react";
@@ -19,6 +19,12 @@ interface SignalCardProps {
     timeframe: string;
     reasoning: string;
     createdAt: Date;
+    // AI brain fields (optional)
+    aiReasoning?: string | null;
+    aiConfidence?: string | null;
+    aiKeyFactors?: string | null; // JSON string
+    aiInsight?: string | null;
+    isAiGenerated?: string | null;
   };
   onDismiss?: (id: string) => void;
   isPremium?: boolean; // Whether user has premium access
@@ -26,6 +32,11 @@ interface SignalCardProps {
 
 export function SignalCard({ signal, onDismiss, isPremium = false }: SignalCardProps) {
   const [mounted, setMounted] = useState(false);
+  const [showAiReasoning, setShowAiReasoning] = useState(false);
+  
+  const isAiSignal = signal.isAiGenerated === "true";
+  const aiConfidence = signal.aiConfidence ? parseInt(signal.aiConfidence) : null;
+  const aiKeyFactors = signal.aiKeyFactors ? (() => { try { return JSON.parse(signal.aiKeyFactors!); } catch { return []; } })() as string[] : [];
   const isBuy = signal.signalType === "BUY";
   const strength = parseInt(signal.strength);
   const isHighPriority = strength >= 7; // High priority signals get blinking alert
@@ -184,13 +195,78 @@ export function SignalCard({ signal, onDismiss, isPremium = false }: SignalCardP
                 </div>
               )}
 
-        {/* Reason */}
+        {/* AI Brain Badge + Reasoning Section */}
+        {isAiSignal && (
+          <div className="pt-2 border-t">
+            {/* AI Badge Row */}
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs font-semibold">
+                  <Brain className="h-3 w-3" />
+                  AI Enhanced
+                </div>
+                {aiConfidence !== null && (
+                  <div className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    aiConfidence >= 75 ? "bg-green-100 text-green-700" :
+                    aiConfidence >= 55 ? "bg-yellow-100 text-yellow-700" :
+                    "bg-red-100 text-red-700"
+                  }`}>
+                    {aiConfidence}% confidence
+                  </div>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs text-purple-600 hover:text-purple-800 hover:bg-purple-50 px-2"
+                onClick={() => setShowAiReasoning(!showAiReasoning)}
+              >
+                {showAiReasoning ? (
+                  <><ChevronUp className="h-3 w-3 mr-1" />Hide AI Reasoning</>
+                ) : (
+                  <><ChevronDown className="h-3 w-3 mr-1" />Show AI Reasoning</>
+                )}
+              </Button>
+            </div>
+
+            {/* Key Factors */}
+            {aiKeyFactors.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {aiKeyFactors.slice(0, 4).map((factor: string, i: number) => (
+                  <span key={i} className="text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full">
+                    {factor}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Expandable AI Reasoning */}
+            {showAiReasoning && signal.aiReasoning && (
+              <div className="mt-2 p-3 bg-purple-50 border border-purple-200 rounded-lg space-y-2">
+                <div className="flex items-start gap-2">
+                  <Brain className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-purple-900">{signal.aiReasoning}</p>
+                </div>
+                {signal.aiInsight && (
+                  <div className="pt-2 border-t border-purple-200">
+                    <p className="text-xs text-purple-700 font-semibold mb-1">AI Market Insight:</p>
+                    <p className="text-xs text-purple-800">{signal.aiInsight}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Reason (standard signals only) */}
+        {!isAiSignal && (
         <div className="pt-2 border-t">
           <div className="flex items-start gap-2">
             <TrendingUp className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
             <p className="text-sm text-muted-foreground">{signal.reasoning}</p>
           </div>
         </div>
+        )}
 
         {/* Mark as Entered Button (only for premium users with unlocked signals) */}
         {isPremium && !isLocked && (

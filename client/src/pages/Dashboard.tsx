@@ -742,7 +742,15 @@ export default function Dashboard() {
                 {filteredSignals.map((signal) => (
                   <SignalCard 
                     key={signal.id} 
-                    signal={{ ...signal, reasoning: signal.reason }} 
+                    signal={{ 
+                      ...signal, 
+                      reasoning: signal.reason,
+                      aiReasoning: signal.aiReasoning,
+                      aiConfidence: signal.aiConfidence,
+                      aiKeyFactors: signal.aiKeyFactors,
+                      aiInsight: signal.aiInsight,
+                      isAiGenerated: signal.isAiGenerated,
+                    }} 
                     isPremium={isPremium}
                   />
                 ))}
@@ -767,7 +775,15 @@ export default function Dashboard() {
                 {buySignals.map((signal) => (
                   <SignalCard 
                     key={signal.id} 
-                    signal={{ ...signal, reasoning: signal.reason }} 
+                    signal={{ 
+                      ...signal, 
+                      reasoning: signal.reason,
+                      aiReasoning: signal.aiReasoning,
+                      aiConfidence: signal.aiConfidence,
+                      aiKeyFactors: signal.aiKeyFactors,
+                      aiInsight: signal.aiInsight,
+                      isAiGenerated: signal.isAiGenerated,
+                    }} 
                     isPremium={isPremium}
                   />
                 ))}
@@ -785,7 +801,15 @@ export default function Dashboard() {
                 {sellSignals.map((signal) => (
                   <SignalCard 
                     key={signal.id} 
-                    signal={{ ...signal, reasoning: signal.reason }} 
+                    signal={{ 
+                      ...signal, 
+                      reasoning: signal.reason,
+                      aiReasoning: signal.aiReasoning,
+                      aiConfidence: signal.aiConfidence,
+                      aiKeyFactors: signal.aiKeyFactors,
+                      aiInsight: signal.aiInsight,
+                      isAiGenerated: signal.isAiGenerated,
+                    }} 
                     isPremium={isPremium}
                   />
                 ))}

@@ -64,6 +64,13 @@
       "when": 1776014515216,
       "tag": "0008_equal_energizer",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1776015685430,
+      "tag": "0009_optimal_khan",
+      "breakpoints": true
     }
   ]
 }
