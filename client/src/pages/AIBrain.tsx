@@ -1,16 +1,115 @@
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Brain, TrendingUp, TrendingDown, Zap, BookOpen, Target, Award, RefreshCw, ChevronRight, Lightbulb, BarChart3 } from "lucide-react";
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 
 export default function AIBrain() {
   const [, navigate] = useLocation();
   const [refreshKey, setRefreshKey] = useState(0);
+  const { isAuthenticated } = useAuth();
+
+  // Login gate for unauthenticated users
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-950 relative overflow-hidden">
+        {/* Blurred preview of AI Brain leaderboard */}
+        <div className="blur-sm pointer-events-none select-none opacity-50">
+          <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+            {/* Fake header */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-800 animate-pulse" />
+              <div className="space-y-1">
+                <div className="h-6 w-40 bg-gray-700 rounded animate-pulse" />
+                <div className="h-3 w-56 bg-gray-800 rounded animate-pulse" />
+              </div>
+            </div>
+            {/* Fake stat cards */}
+            <div className="grid grid-cols-4 gap-4">
+              {["Win Rate", "Signals Analyzed", "Outcomes Learned", "Feedback"].map((label) => (
+                <div key={label} className="bg-gray-900 border border-purple-500/20 rounded-xl p-4">
+                  <div className="h-3 w-20 bg-gray-700 rounded mb-2 animate-pulse" />
+                  <div className="h-8 w-16 bg-purple-700/50 rounded animate-pulse" />
+                </div>
+              ))}
+            </div>
+            {/* Fake leaderboard */}
+            <div className="bg-gray-900 border border-purple-500/20 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-800">
+                <div className="h-5 w-36 bg-gray-700 rounded animate-pulse" />
+              </div>
+              {[{ w: "78%", c: "bg-green-500/30" }, { w: "71%", c: "bg-green-500/20" }, { w: "65%", c: "bg-yellow-500/20" }, { w: "58%", c: "bg-yellow-500/10" }].map((row, i) => (
+                <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-gray-800/50 last:border-0">
+                  <div className="w-6 h-6 rounded-full bg-purple-700/50 animate-pulse" />
+                  <div className="h-4 w-28 bg-gray-700 rounded animate-pulse" />
+                  <div className="ml-auto flex items-center gap-3">
+                    <div className={`h-4 w-12 ${row.c} rounded animate-pulse`} />
+                    <div className="h-2 w-24 bg-gray-800 rounded-full">
+                      <div className={`h-2 ${row.c} rounded-full`} style={{ width: row.w }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Fake lessons */}
+            <div className="bg-gray-900 border border-purple-500/20 rounded-xl p-4 space-y-3">
+              <div className="h-5 w-32 bg-gray-700 rounded animate-pulse" />
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex gap-3">
+                  <div className="w-5 h-5 rounded-full bg-yellow-700/50 animate-pulse flex-shrink-0 mt-0.5" />
+                  <div className="space-y-1 flex-1">
+                    <div className="h-3 w-full bg-gray-700 rounded animate-pulse" />
+                    <div className="h-3 w-3/4 bg-gray-800 rounded animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Overlay CTA card */}
+        <div className="absolute inset-0 flex items-center justify-center p-4">
+          <Card className="max-w-sm w-full shadow-2xl border border-purple-500/30 bg-gray-900/95 backdrop-blur-sm text-white">
+            <CardHeader className="text-center pb-2">
+              <div className="w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/25">
+                <Brain className="h-8 w-8 text-white" />
+              </div>
+              <CardTitle className="text-lg font-black bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
+                AI Brain
+              </CardTitle>
+              <p className="text-base font-semibold text-white mt-1">Self-Learning Intelligence</p>
+              <CardDescription className="text-sm mt-1 text-gray-400">
+                The AI Brain analyzes every signal, learns from outcomes, and continuously improves its strategy weights to maximize your win rate.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-2">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {["Strategy leaderboard", "AI reasoning", "Learning history", "Lessons learned"].map((f) => (
+                  <div key={f} className="flex items-center gap-1.5 bg-purple-500/10 border border-purple-500/20 rounded-lg px-2.5 py-1.5 text-purple-300 font-medium">
+                    <span className="text-green-400">✓</span> {f}
+                  </div>
+                ))}
+              </div>
+              <Button asChild className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 font-semibold">
+                <Link href="/activate">Login / Activate Account</Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full text-sm border-purple-500/30 text-purple-300 hover:bg-purple-500/10">
+                <Link href="/premium?trial=true">Try Free for 7 Days</Link>
+              </Button>
+              <Button asChild variant="ghost" className="w-full text-xs text-gray-500">
+                <Link href="/">Back to Dashboard</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   const { data: brainStats, isLoading: statsLoading, refetch: refetchStats } = trpc.ai.getBrainStats.useQuery(undefined, {
     refetchInterval: 60000,

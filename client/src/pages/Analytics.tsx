@@ -70,35 +70,35 @@ export default function Analytics() {
             <div className="grid grid-cols-4 gap-4">
               {["Win Rate", "Total Signals", "Avg Pips", "Best Pair"].map((label) => (
                 <div key={label} className="bg-white rounded-xl p-4 shadow-sm border">
-                  <div className="h-3 w-16 bg-gray-200 rounded mb-2" />
-                  <div className="h-8 w-20 bg-blue-200 rounded" />
+                  <div className="h-3 w-16 bg-gray-200 rounded mb-2 animate-pulse" />
+                  <div className="h-8 w-20 bg-blue-200 rounded animate-pulse" />
                 </div>
               ))}
             </div>
             {/* Fake chart area */}
             <div className="bg-white rounded-xl shadow-sm border p-5">
-              <div className="h-4 w-32 bg-gray-300 rounded mb-4" />
+              <div className="h-4 w-32 bg-gray-300 rounded mb-4 animate-pulse" />
               <div className="flex items-end gap-2 h-32">
                 {[60, 80, 45, 90, 70, 55, 85, 65, 75, 50, 88, 72].map((h, i) => (
-                  <div key={i} className="flex-1 bg-blue-200 rounded-t" style={{ height: `${h}%` }} />
+                  <div key={i} className="flex-1 bg-blue-200 rounded-t animate-pulse" style={{ height: `${h}%` }} />
                 ))}
               </div>
             </div>
             {/* Fake pair breakdown */}
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white rounded-xl shadow-sm border p-4 space-y-2">
-                <div className="h-4 w-28 bg-gray-300 rounded" />
+                <div className="h-4 w-28 bg-gray-300 rounded animate-pulse" />
                 {[...Array(4)].map((_, i) => (
                   <div key={i} className="flex justify-between items-center">
-                    <div className="h-3 w-16 bg-gray-200 rounded" />
-                    <div className="h-3 w-12 bg-green-200 rounded" />
+                    <div className="h-3 w-16 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-3 w-12 bg-green-200 rounded animate-pulse" />
                   </div>
                 ))}
               </div>
               <div className="bg-white rounded-xl shadow-sm border p-4 space-y-2">
-                <div className="h-4 w-28 bg-gray-300 rounded" />
+                <div className="h-4 w-28 bg-gray-300 rounded animate-pulse" />
                 <div className="flex items-center justify-center h-24">
-                  <div className="w-20 h-20 rounded-full border-8 border-blue-200 border-t-orange-300" />
+                  <div className="w-20 h-20 rounded-full border-8 border-blue-200 border-t-orange-300 animate-spin" style={{ animationDuration: '3s' }} />
                 </div>
               </div>
             </div>
@@ -131,8 +131,8 @@ export default function Analytics() {
               <Button asChild className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 font-semibold">
                 <Link href="/activate">Login / Activate Account</Link>
               </Button>
-              <Button asChild variant="outline" className="w-full text-sm">
-                <Link href="/premium">View Plans &amp; Pricing</Link>
+              <Button asChild variant="outline" className="w-full text-sm border-blue-300 text-blue-700 hover:bg-blue-50">
+                <Link href="/premium?trial=true">Try Free for 7 Days</Link>
               </Button>
               <Button asChild variant="ghost" className="w-full text-xs text-muted-foreground">
                 <Link href="/">Back to Dashboard</Link>

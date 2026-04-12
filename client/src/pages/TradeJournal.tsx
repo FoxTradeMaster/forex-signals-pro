@@ -252,17 +252,17 @@ export default function TradeJournal() {
             {/* Fake header */}
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <div className="h-8 w-48 bg-gray-300 rounded-lg" />
-                <div className="h-4 w-64 bg-gray-200 rounded" />
+                <div className="h-8 w-48 bg-gray-300 rounded-lg animate-pulse" />
+                <div className="h-4 w-64 bg-gray-200 rounded animate-pulse" />
               </div>
-              <div className="h-10 w-32 bg-indigo-300 rounded-lg" />
+              <div className="h-10 w-32 bg-indigo-300 rounded-lg animate-pulse" />
             </div>
             {/* Fake stats row */}
             <div className="grid grid-cols-4 gap-4">
               {["Win Rate", "Total Trades", "Net P&L", "Best Trade"].map((label) => (
                 <div key={label} className="bg-white rounded-xl p-4 shadow-sm border">
-                  <div className="h-3 w-16 bg-gray-200 rounded mb-2" />
-                  <div className="h-7 w-20 bg-gray-300 rounded" />
+                  <div className="h-3 w-16 bg-gray-200 rounded mb-2 animate-pulse" />
+                  <div className="h-7 w-20 bg-gray-300 rounded animate-pulse" />
                 </div>
               ))}
             </div>
@@ -270,10 +270,10 @@ export default function TradeJournal() {
             <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
               {[...Array(5)].map((_, i) => (
                 <div key={i} className="flex items-center gap-4 px-4 py-3 border-b last:border-0">
-                  <div className="h-4 w-20 bg-gray-200 rounded" />
-                  <div className="h-4 w-16 bg-gray-200 rounded" />
-                  <div className="h-4 w-12 bg-green-200 rounded ml-auto" />
-                  <div className="h-4 w-16 bg-gray-200 rounded" />
+                  <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-4 w-12 bg-green-200 rounded ml-auto animate-pulse" />
+                  <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
                 </div>
               ))}
             </div>
@@ -306,8 +306,8 @@ export default function TradeJournal() {
               <Button asChild className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 font-semibold">
                 <Link href="/activate">Login / Activate Account</Link>
               </Button>
-              <Button asChild variant="outline" className="w-full text-sm">
-                <Link href="/premium">View Plans &amp; Pricing</Link>
+              <Button asChild variant="outline" className="w-full text-sm border-indigo-300 text-indigo-700 hover:bg-indigo-50">
+                <Link href="/premium?trial=true">Try Free for 7 Days</Link>
               </Button>
               <Button asChild variant="ghost" className="w-full text-xs text-muted-foreground">
                 <Link href="/">Back to Dashboard</Link>

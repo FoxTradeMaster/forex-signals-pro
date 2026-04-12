@@ -304,19 +304,19 @@ export default function AlertSettings() {
               {["Price Alert", "Signal Generated", "Take Profit Hit", "Stop Loss Hit", "Market Open"].map((label) => (
                 <div key={label} className="flex items-center justify-between px-5 py-4 border-b last:border-0">
                   <div className="space-y-1">
-                    <div className="h-4 w-32 bg-gray-300 rounded" />
-                    <div className="h-3 w-48 bg-gray-200 rounded" />
+                    <div className="h-4 w-32 bg-gray-300 rounded animate-pulse" />
+                    <div className="h-3 w-48 bg-gray-200 rounded animate-pulse" />
                   </div>
-                  <div className="h-6 w-11 bg-orange-300 rounded-full" />
+                  <div className="h-6 w-11 bg-orange-300 rounded-full animate-pulse" />
                 </div>
               ))}
             </div>
             {/* Fake threshold inputs */}
             <div className="bg-white rounded-xl shadow-sm border p-5 space-y-3">
-              <div className="h-5 w-36 bg-gray-300 rounded" />
+              <div className="h-5 w-36 bg-gray-300 rounded animate-pulse" />
               <div className="grid grid-cols-2 gap-3">
-                <div className="h-10 bg-gray-100 rounded-lg border" />
-                <div className="h-10 bg-gray-100 rounded-lg border" />
+                <div className="h-10 bg-gray-100 rounded-lg border animate-pulse" />
+                <div className="h-10 bg-gray-100 rounded-lg border animate-pulse" />
               </div>
             </div>
           </div>
@@ -348,8 +348,8 @@ export default function AlertSettings() {
               <Button asChild className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 font-semibold">
                 <Link href="/activate">Login / Activate Account</Link>
               </Button>
-              <Button asChild variant="outline" className="w-full text-sm">
-                <Link href="/premium">View Plans &amp; Pricing</Link>
+              <Button asChild variant="outline" className="w-full text-sm border-orange-300 text-orange-700 hover:bg-orange-50">
+                <Link href="/premium?trial=true">Try Free for 7 Days</Link>
               </Button>
               <Button asChild variant="ghost" className="w-full text-xs text-muted-foreground">
                 <Link href="/">Back to Dashboard</Link>
