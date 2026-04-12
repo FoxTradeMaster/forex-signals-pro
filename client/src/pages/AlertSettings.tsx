@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
+import { APP_LOGO, APP_TITLE } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { Bell, Mail, Monitor, TrendingUp, TrendingDown, Target, AlertTriangle, ArrowLeft, TestTube, HelpCircle } from "lucide-react";
 import { Link } from "wouter";
@@ -291,20 +291,27 @@ export default function AlertSettings() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
-            <img src={APP_LOGO} alt={APP_TITLE} className="h-16 w-16 mx-auto mb-4" />
-            <CardTitle>Login Required</CardTitle>
-            <CardDescription>
-              You need to be logged in to manage alert settings
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 to-slate-100">
+        <Card className="max-w-md w-full shadow-lg">
+          <CardHeader className="text-center pb-2">
+            <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-orange-100 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+            </div>
+            <CardTitle className="text-xl">Login Required</CardTitle>
+            <CardDescription className="text-sm mt-1">
+              You need to be logged in to manage your Alert Settings.
+              <br />
+              <span className="text-orange-600 font-medium">Premium & Pro members</span> get real-time price alerts and signal notifications.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Button asChild className="w-full">
-              <a href={getLoginUrl()}>Login to Continue</a>
+          <CardContent className="space-y-3 pt-4">
+            <Button asChild className="w-full bg-orange-600 hover:bg-orange-700">
+              <Link href="/activate">Login / Activate Account</Link>
             </Button>
             <Button asChild variant="outline" className="w-full">
+              <Link href="/premium">View Plans &amp; Pricing</Link>
+            </Button>
+            <Button asChild variant="ghost" className="w-full text-muted-foreground">
               <Link href="/">Back to Dashboard</Link>
             </Button>
           </CardContent>

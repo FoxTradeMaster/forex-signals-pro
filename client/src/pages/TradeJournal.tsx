@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
+import { APP_LOGO, APP_TITLE } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { 
   BookOpen, 
@@ -245,20 +245,27 @@ export default function TradeJournal() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
-            <img src={APP_LOGO} alt={APP_TITLE} className="h-16 w-16 mx-auto mb-4" />
-            <CardTitle>Login Required</CardTitle>
-            <CardDescription>
-              You need to be logged in to access your trade journal
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 to-slate-100">
+        <Card className="max-w-md w-full shadow-lg">
+          <CardHeader className="text-center pb-2">
+            <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-indigo-100 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+            </div>
+            <CardTitle className="text-xl">Login Required</CardTitle>
+            <CardDescription className="text-sm mt-1">
+              You need to be logged in to access your Trade Journal.
+              <br />
+              <span className="text-indigo-600 font-medium">Premium & Pro members</span> get full access to track trades, P&amp;L, and performance stats.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Button asChild className="w-full">
-              <a href={getLoginUrl()}>Login to Continue</a>
+          <CardContent className="space-y-3 pt-4">
+            <Button asChild className="w-full bg-indigo-600 hover:bg-indigo-700">
+              <Link href="/activate">Login / Activate Account</Link>
             </Button>
             <Button asChild variant="outline" className="w-full">
+              <Link href="/premium">View Plans &amp; Pricing</Link>
+            </Button>
+            <Button asChild variant="ghost" className="w-full text-muted-foreground">
               <Link href="/">Back to Dashboard</Link>
             </Button>
           </CardContent>

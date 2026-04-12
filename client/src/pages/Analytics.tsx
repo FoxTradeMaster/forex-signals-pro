@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
+import { APP_LOGO, APP_TITLE } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { ArrowLeft, BarChart3, TrendingUp, Target, Calendar } from "lucide-react";
 import { Link } from "wouter";
@@ -61,20 +61,27 @@ export default function Analytics() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
-            <img src={APP_LOGO} alt={APP_TITLE} className="h-16 w-16 mx-auto mb-4" />
-            <CardTitle>Login Required</CardTitle>
-            <CardDescription>
-              You need to be logged in to view analytics
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 to-slate-100">
+        <Card className="max-w-md w-full shadow-lg">
+          <CardHeader className="text-center pb-2">
+            <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            </div>
+            <CardTitle className="text-xl">Login Required</CardTitle>
+            <CardDescription className="text-sm mt-1">
+              You need to be logged in to view Analytics.
+              <br />
+              <span className="text-blue-600 font-medium">Premium & Pro members</span> get full performance analytics, win rates, and P&amp;L tracking.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Button asChild className="w-full">
-              <a href={getLoginUrl()}>Login to Continue</a>
+          <CardContent className="space-y-3 pt-4">
+            <Button asChild className="w-full bg-blue-600 hover:bg-blue-700">
+              <Link href="/activate">Login / Activate Account</Link>
             </Button>
             <Button asChild variant="outline" className="w-full">
+              <Link href="/premium">View Plans &amp; Pricing</Link>
+            </Button>
+            <Button asChild variant="ghost" className="w-full text-muted-foreground">
               <Link href="/">Back to Dashboard</Link>
             </Button>
           </CardContent>

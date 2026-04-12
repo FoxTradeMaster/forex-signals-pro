@@ -574,7 +574,20 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Store AI reasoning (aiReasoning, aiConfidence, aiKeyFactors, aiInsight, isAiGenerated) in signals table
 - [x] Update SignalCard to show AI reasoning badge, confidence score, key factors, expandable reasoning
 - [x] TypeScript compiles clean (0 errors)
-- [ ] Push latest code to GitHub repository
-- [ ] Verify Render auto-deployment triggers
-- [ ] Run database migration on Render for AI brain tables
+- [ ] Push latest code to GitHub repository (user action: export via Management UI ⋯ menu)
+- [ ] Verify Render auto-deployment triggers (automatic after GitHub push)
+- [ ] Run database migration on Render for AI brain tables (user action: pnpm db:push in Render shell)
 - [ ] Test AI signals appearing in live dashboard
+
+## Phase 54: Fix Login Required Page
+- [x] Fix "Login to Continue" button pointing to portal.manus.im - now redirects to /activate
+- [x] Fix broken logo image on Login Required page - replaced with inline SVG icons
+- [x] Fixed Analytics page same issue
+- [x] Fixed AlertSettings page same issue
+- [x] Fixed TradeJournal page same issue
+- [ ] Push fix to GitHub
+
+## Phase 54: Fix Login Required Page
+- [ ] Fix broken logo image on Login Required page
+- [ ] Improve messaging to explain what the feature is and offer upgrade path
+- [ ] Push fix to GitHub
