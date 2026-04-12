@@ -61,31 +61,85 @@ export default function Analytics() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 to-slate-100">
-        <Card className="max-w-md w-full shadow-lg">
-          <CardHeader className="text-center pb-2">
-            <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 relative overflow-hidden">
+        {/* Blurred preview of Analytics UI */}
+        <div className="blur-sm pointer-events-none select-none opacity-60">
+          <div className="container mx-auto px-4 py-8 space-y-6">
+            <div className="h-8 w-40 bg-gray-300 rounded-lg" />
+            {/* Fake KPI cards */}
+            <div className="grid grid-cols-4 gap-4">
+              {["Win Rate", "Total Signals", "Avg Pips", "Best Pair"].map((label) => (
+                <div key={label} className="bg-white rounded-xl p-4 shadow-sm border">
+                  <div className="h-3 w-16 bg-gray-200 rounded mb-2" />
+                  <div className="h-8 w-20 bg-blue-200 rounded" />
+                </div>
+              ))}
             </div>
-            <CardTitle className="text-xl">Login Required</CardTitle>
-            <CardDescription className="text-sm mt-1">
-              You need to be logged in to view Analytics.
-              <br />
-              <span className="text-blue-600 font-medium">Premium & Pro members</span> get full performance analytics, win rates, and P&amp;L tracking.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 pt-4">
-            <Button asChild className="w-full bg-blue-600 hover:bg-blue-700">
-              <Link href="/activate">Login / Activate Account</Link>
-            </Button>
-            <Button asChild variant="outline" className="w-full">
-              <Link href="/premium">View Plans &amp; Pricing</Link>
-            </Button>
-            <Button asChild variant="ghost" className="w-full text-muted-foreground">
-              <Link href="/">Back to Dashboard</Link>
-            </Button>
-          </CardContent>
-        </Card>
+            {/* Fake chart area */}
+            <div className="bg-white rounded-xl shadow-sm border p-5">
+              <div className="h-4 w-32 bg-gray-300 rounded mb-4" />
+              <div className="flex items-end gap-2 h-32">
+                {[60, 80, 45, 90, 70, 55, 85, 65, 75, 50, 88, 72].map((h, i) => (
+                  <div key={i} className="flex-1 bg-blue-200 rounded-t" style={{ height: `${h}%` }} />
+                ))}
+              </div>
+            </div>
+            {/* Fake pair breakdown */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white rounded-xl shadow-sm border p-4 space-y-2">
+                <div className="h-4 w-28 bg-gray-300 rounded" />
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="flex justify-between items-center">
+                    <div className="h-3 w-16 bg-gray-200 rounded" />
+                    <div className="h-3 w-12 bg-green-200 rounded" />
+                  </div>
+                ))}
+              </div>
+              <div className="bg-white rounded-xl shadow-sm border p-4 space-y-2">
+                <div className="h-4 w-28 bg-gray-300 rounded" />
+                <div className="flex items-center justify-center h-24">
+                  <div className="w-20 h-20 rounded-full border-8 border-blue-200 border-t-orange-300" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Overlay CTA card */}
+        <div className="absolute inset-0 flex items-center justify-center p-4">
+          <Card className="max-w-sm w-full shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+            <CardHeader className="text-center pb-2">
+              <div className="w-14 h-14 mx-auto mb-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <span className="text-2xl">🦊</span>
+              </div>
+              <CardTitle className="text-lg font-black bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                FOX TRADE MASTER™
+              </CardTitle>
+              <p className="text-base font-semibold text-gray-900 mt-1">Performance Analytics</p>
+              <CardDescription className="text-sm mt-1">
+                See your win rate, best pairs, strategy performance, and full P&amp;L breakdown in one dashboard.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-2">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {["Win rate charts", "Pair breakdown", "Strategy stats", "P&L history"].map((f) => (
+                  <div key={f} className="flex items-center gap-1.5 bg-blue-50 rounded-lg px-2.5 py-1.5 text-blue-700 font-medium">
+                    <span className="text-green-500">✓</span> {f}
+                  </div>
+                ))}
+              </div>
+              <Button asChild className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 font-semibold">
+                <Link href="/activate">Login / Activate Account</Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full text-sm">
+                <Link href="/premium">View Plans &amp; Pricing</Link>
+              </Button>
+              <Button asChild variant="ghost" className="w-full text-xs text-muted-foreground">
+                <Link href="/">Back to Dashboard</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }

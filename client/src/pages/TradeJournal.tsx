@@ -245,31 +245,76 @@ export default function TradeJournal() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 to-slate-100">
-        <Card className="max-w-md w-full shadow-lg">
-          <CardHeader className="text-center pb-2">
-            <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-indigo-100 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 relative overflow-hidden">
+        {/* Blurred preview of the Trade Journal UI */}
+        <div className="blur-sm pointer-events-none select-none opacity-60">
+          <div className="container mx-auto px-4 py-8 space-y-6">
+            {/* Fake header */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <div className="h-8 w-48 bg-gray-300 rounded-lg" />
+                <div className="h-4 w-64 bg-gray-200 rounded" />
+              </div>
+              <div className="h-10 w-32 bg-indigo-300 rounded-lg" />
             </div>
-            <CardTitle className="text-xl">Login Required</CardTitle>
-            <CardDescription className="text-sm mt-1">
-              You need to be logged in to access your Trade Journal.
-              <br />
-              <span className="text-indigo-600 font-medium">Premium & Pro members</span> get full access to track trades, P&amp;L, and performance stats.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 pt-4">
-            <Button asChild className="w-full bg-indigo-600 hover:bg-indigo-700">
-              <Link href="/activate">Login / Activate Account</Link>
-            </Button>
-            <Button asChild variant="outline" className="w-full">
-              <Link href="/premium">View Plans &amp; Pricing</Link>
-            </Button>
-            <Button asChild variant="ghost" className="w-full text-muted-foreground">
-              <Link href="/">Back to Dashboard</Link>
-            </Button>
-          </CardContent>
-        </Card>
+            {/* Fake stats row */}
+            <div className="grid grid-cols-4 gap-4">
+              {["Win Rate", "Total Trades", "Net P&L", "Best Trade"].map((label) => (
+                <div key={label} className="bg-white rounded-xl p-4 shadow-sm border">
+                  <div className="h-3 w-16 bg-gray-200 rounded mb-2" />
+                  <div className="h-7 w-20 bg-gray-300 rounded" />
+                </div>
+              ))}
+            </div>
+            {/* Fake trade rows */}
+            <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center gap-4 px-4 py-3 border-b last:border-0">
+                  <div className="h-4 w-20 bg-gray-200 rounded" />
+                  <div className="h-4 w-16 bg-gray-200 rounded" />
+                  <div className="h-4 w-12 bg-green-200 rounded ml-auto" />
+                  <div className="h-4 w-16 bg-gray-200 rounded" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Overlay CTA card */}
+        <div className="absolute inset-0 flex items-center justify-center p-4">
+          <Card className="max-w-sm w-full shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+            <CardHeader className="text-center pb-2">
+              <div className="w-14 h-14 mx-auto mb-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <span className="text-2xl">🦊</span>
+              </div>
+              <CardTitle className="text-lg font-black bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                FOX TRADE MASTER™
+              </CardTitle>
+              <p className="text-base font-semibold text-gray-900 mt-1">Trade Journal</p>
+              <CardDescription className="text-sm mt-1">
+                Track every trade, monitor your P&amp;L, and analyze your performance with detailed statistics.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-2">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {["Win/Loss tracking", "P&L analytics", "Strategy stats", "Trade notes"].map((f) => (
+                  <div key={f} className="flex items-center gap-1.5 bg-indigo-50 rounded-lg px-2.5 py-1.5 text-indigo-700 font-medium">
+                    <span className="text-green-500">✓</span> {f}
+                  </div>
+                ))}
+              </div>
+              <Button asChild className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 font-semibold">
+                <Link href="/activate">Login / Activate Account</Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full text-sm">
+                <Link href="/premium">View Plans &amp; Pricing</Link>
+              </Button>
+              <Button asChild variant="ghost" className="w-full text-xs text-muted-foreground">
+                <Link href="/">Back to Dashboard</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }

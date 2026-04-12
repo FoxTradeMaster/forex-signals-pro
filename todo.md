@@ -591,3 +591,12 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [ ] Fix broken logo image on Login Required page
 - [ ] Improve messaging to explain what the feature is and offer upgrade path
 - [ ] Push fix to GitHub
+
+## Phase 55: UX Improvements - Login Gates & Activate Page
+- [x] Fix Signal History login gate (no login gate - open to all users, no issue)
+- [x] Audit all remaining pages for broken Manus OAuth redirects (fixed main.tsx, DashboardLayout.tsx)
+- [x] Brand /activate page with FOX TRADE MASTER logo, tagline, trust badges, and professional styling
+- [x] Add blurred preview teasers to Trade Journal login gate
+- [x] Add blurred preview teasers to Alert Settings login gate
+- [x] Add blurred preview teasers to Analytics login gate
+- [ ] Push all changes to GitHub

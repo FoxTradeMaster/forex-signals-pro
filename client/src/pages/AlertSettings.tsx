@@ -291,31 +291,72 @@ export default function AlertSettings() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 to-slate-100">
-        <Card className="max-w-md w-full shadow-lg">
-          <CardHeader className="text-center pb-2">
-            <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-orange-100 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 relative overflow-hidden">
+        {/* Blurred preview of Alert Settings UI */}
+        <div className="blur-sm pointer-events-none select-none opacity-60">
+          <div className="container mx-auto px-4 py-8 space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="h-8 w-40 bg-gray-300 rounded-lg" />
+              <div className="h-6 w-24 bg-orange-200 rounded-full" />
             </div>
-            <CardTitle className="text-xl">Login Required</CardTitle>
-            <CardDescription className="text-sm mt-1">
-              You need to be logged in to manage your Alert Settings.
-              <br />
-              <span className="text-orange-600 font-medium">Premium & Pro members</span> get real-time price alerts and signal notifications.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 pt-4">
-            <Button asChild className="w-full bg-orange-600 hover:bg-orange-700">
-              <Link href="/activate">Login / Activate Account</Link>
-            </Button>
-            <Button asChild variant="outline" className="w-full">
-              <Link href="/premium">View Plans &amp; Pricing</Link>
-            </Button>
-            <Button asChild variant="ghost" className="w-full text-muted-foreground">
-              <Link href="/">Back to Dashboard</Link>
-            </Button>
-          </CardContent>
-        </Card>
+            {/* Fake toggle rows */}
+            <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+              {["Price Alert", "Signal Generated", "Take Profit Hit", "Stop Loss Hit", "Market Open"].map((label) => (
+                <div key={label} className="flex items-center justify-between px-5 py-4 border-b last:border-0">
+                  <div className="space-y-1">
+                    <div className="h-4 w-32 bg-gray-300 rounded" />
+                    <div className="h-3 w-48 bg-gray-200 rounded" />
+                  </div>
+                  <div className="h-6 w-11 bg-orange-300 rounded-full" />
+                </div>
+              ))}
+            </div>
+            {/* Fake threshold inputs */}
+            <div className="bg-white rounded-xl shadow-sm border p-5 space-y-3">
+              <div className="h-5 w-36 bg-gray-300 rounded" />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="h-10 bg-gray-100 rounded-lg border" />
+                <div className="h-10 bg-gray-100 rounded-lg border" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Overlay CTA card */}
+        <div className="absolute inset-0 flex items-center justify-center p-4">
+          <Card className="max-w-sm w-full shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+            <CardHeader className="text-center pb-2">
+              <div className="w-14 h-14 mx-auto mb-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <span className="text-2xl">🦊</span>
+              </div>
+              <CardTitle className="text-lg font-black bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                FOX TRADE MASTER™
+              </CardTitle>
+              <p className="text-base font-semibold text-gray-900 mt-1">Alert Settings</p>
+              <CardDescription className="text-sm mt-1">
+                Get notified instantly when signals are generated, profit targets are hit, or market conditions change.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-2">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {["Price alerts", "Signal alerts", "Take profit", "Push notifications"].map((f) => (
+                  <div key={f} className="flex items-center gap-1.5 bg-orange-50 rounded-lg px-2.5 py-1.5 text-orange-700 font-medium">
+                    <span className="text-green-500">✓</span> {f}
+                  </div>
+                ))}
+              </div>
+              <Button asChild className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 font-semibold">
+                <Link href="/activate">Login / Activate Account</Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full text-sm">
+                <Link href="/premium">View Plans &amp; Pricing</Link>
+              </Button>
+              <Button asChild variant="ghost" className="w-full text-xs text-muted-foreground">
+                <Link href="/">Back to Dashboard</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
