@@ -7,12 +7,20 @@ import { getLoginUrl } from "@/const";
 import { Check, Lock, Sparkles, Loader2, Crown, Star } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Premium() {
   const [, setLocation] = useLocation();
   const [processingPlan, setProcessingPlan] = useState<string | null>(null);
+  const [isTrial, setIsTrial] = useState(false);
   const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('trial') === 'true') {
+      setIsTrial(true);
+    }
+  }, []);
   
   const { data: subscriptionStatus } = trpc.subscription.getStatus.useQuery();
   
@@ -93,6 +101,26 @@ export default function Premium() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-purple-50 py-12 px-4">
       <div className="container max-w-7xl">
+        {/* Trial Banner */}
+        {isTrial && (
+          <div className="mb-8 rounded-2xl bg-gradient-to-r from-orange-500 via-red-500 to-purple-600 p-1 shadow-xl">
+            <div className="rounded-xl bg-white px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white text-lg flex-shrink-0">
+                  🎁
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900 text-lg">🔥 Special Offer: 7-Day Free Trial</p>
+                  <p className="text-sm text-muted-foreground">Start trading with full access — no charge for 7 days. Cancel anytime.</p>
+                </div>
+              </div>
+              <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm px-4 py-1 whitespace-nowrap">
+                Limited Time
+              </Badge>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
@@ -103,9 +131,9 @@ export default function Premium() {
               FOX TRADE MASTER™
             </h1>
           </div>
-          <h2 className="text-2xl font-bold mb-2">Choose Your Trading Plan</h2>
+          <h2 className="text-2xl font-bold mb-2">{isTrial ? 'Start Your Free 7-Day Trial' : 'Choose Your Trading Plan'}</h2>
           <p className="text-muted-foreground">
-            From 1 pair to 156 pairs - unlock the signals you need
+            {isTrial ? 'Full access for 7 days — then choose the plan that suits you' : 'From 1 pair to 156 pairs - unlock the signals you need'}
           </p>
         </div>
 

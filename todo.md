@@ -605,4 +605,12 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Add AI Brain login gate with blurred leaderboard preview for free users
 - [x] Add animate-pulse shimmer to all blurred skeleton previews (TradeJournal, AlertSettings, Analytics, AIBrain)
 - [x] Add "Try Free for 7 Days" CTA button to all login gate cards
+- [x] Push all changes to GitHub
+
+## Phase 57: Conversion & AI Cron
+- [x] Handle ?trial=true flag on Premium page with highlighted trial banner and pre-selected plan
+- [x] Add social proof lines to all 4 login gate cards (Trade Journal, Alert Settings, Analytics, AI Brain)
+- [x] Set up AI learning cron job (runs every hour, calls checkAndLearnFromResolvedSignals)
+- [x] Created server/cron/aiLearning.ts cron script
+- [x] Added ai-brain-learning cron job to render.yaml (schedule: 0 * * * *)
 - [ ] Push all changes to GitHub

@@ -345,6 +345,15 @@ export default function AlertSettings() {
                   </div>
                 ))}
               </div>
+              {/* Social proof */}
+              <div className="flex items-center justify-center gap-2 py-1">
+                <div className="flex -space-x-1.5">
+                  {[1,2,3,4,5].map((i) => (
+                    <div key={i} className="w-5 h-5 rounded-full bg-gradient-to-br from-orange-400 to-red-500 border-2 border-white flex items-center justify-center text-white text-[8px] font-bold">{i}</div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground"><span className="font-semibold text-gray-700">850+ traders</span> never miss a signal</p>
+              </div>
               <Button asChild className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 font-semibold">
                 <Link href="/activate">Login / Activate Account</Link>
               </Button>

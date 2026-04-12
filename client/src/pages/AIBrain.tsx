@@ -95,6 +95,15 @@ export default function AIBrain() {
                   </div>
                 ))}
               </div>
+              {/* Social proof */}
+              <div className="flex items-center justify-center gap-2 py-1">
+                <div className="flex -space-x-1.5">
+                  {[1,2,3,4,5].map((i) => (
+                    <div key={i} className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 border-2 border-gray-800 flex items-center justify-center text-white text-[8px] font-bold">{i}</div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-400"><span className="font-semibold text-gray-200">AI trained on 10,000+</span> real signals</p>
+              </div>
               <Button asChild className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 font-semibold">
                 <Link href="/activate">Login / Activate Account</Link>
               </Button>
