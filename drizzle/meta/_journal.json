@@ -57,6 +57,13 @@
       "when": 1764831871421,
       "tag": "0007_same_wallow",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1776014515216,
+      "tag": "0008_equal_energizer",
+      "breakpoints": true
     }
   ]
 }

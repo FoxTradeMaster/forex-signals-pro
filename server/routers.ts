@@ -16,6 +16,7 @@ import { createMagicLink, verifyMagicLink } from "./_core/magicLink";
 import { sendMagicLinkEmail } from "./_core/sendMagicLinkEmail";
 import jwt from "jsonwebtoken";
 import { ENV } from "./_core/env";
+import { aiRouter } from "./routers/aiRouter";
 
 export const appRouter = router({
   system: systemRouter,
@@ -861,7 +862,7 @@ export const appRouter = router({
           endpoint: input.subscription.endpoint,
           p256dh: input.subscription.keys.p256dh,
           auth: input.subscription.keys.auth,
-          deviceName: input.deviceName,
+          userAgent: input.deviceName,
         });
         return { success: !!id, id };
       }),
@@ -873,7 +874,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const { deletePushSubscription } = await import("./db");
-        const success = await deletePushSubscription(ctx.user.id, input.endpoint);
+        const success = await deletePushSubscription(input.endpoint);
         return { success };
       }),
 
@@ -1009,6 +1010,9 @@ export const appRouter = router({
         return await getDailyPLTrend(input.days);
       }),
   }),
+
+  // AI Brain router
+  ai: aiRouter,
 
   // Signal Sharing router
   sharing: router({

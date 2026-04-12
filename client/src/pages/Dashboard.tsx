@@ -13,7 +13,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAudioNotification } from "@/hooks/useAudioNotification";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { RefreshCw, Volume2, VolumeX, TrendingUp, Clock, Zap, Filter, Crown, Search, Bell, BookOpen, BarChart3 } from "lucide-react";
+import { RefreshCw, Volume2, VolumeX, TrendingUp, Clock, Zap, Filter, Crown, Search, Bell, BookOpen, BarChart3, Brain } from "lucide-react";
+import AIInsightsPanel from "@/components/AIInsightsPanel";
 import { toast } from "sonner";
 
 export default function Dashboard() {
@@ -320,6 +321,16 @@ export default function Dashboard() {
                 Analytics
               </Button>
 
+              {/* AI Brain Button */}
+              <Button
+                onClick={() => window.location.href = "/ai-brain"}
+                variant="outline"
+                className="border-2 border-purple-600 text-purple-700 hover:bg-purple-50 md:text-sm lg:text-base px-3 md:px-4 py-2"
+              >
+                <Brain className="h-4 w-4 mr-2" />
+                AI Brain
+              </Button>
+
               {/* Admin Button (only for admins) */}
               {user?.role === 'admin' && (
                 <Button
@@ -469,6 +480,16 @@ export default function Dashboard() {
               Signal History
             </Button>
 
+            {/* AI Brain Button (mobile) */}
+            <Button
+              onClick={() => window.location.href = "/ai-brain"}
+              variant="outline"
+              className="w-full border-2 border-purple-600 text-purple-700 hover:bg-purple-50"
+            >
+              <Brain className="h-4 w-4 mr-2" />
+              AI Brain
+            </Button>
+
             {/* Alert Settings, Trade Journal, and Analytics Buttons */}
             <div className="grid grid-cols-3 gap-2">
               <Button
@@ -538,6 +559,9 @@ export default function Dashboard() {
             onRenew={() => window.location.href = "/premium"}
           />
         )}
+
+        {/* AI Insights Panel */}
+        <AIInsightsPanel />
 
         {/* Performance Stats (only for premium users) */}
         {isPremium && <PerformanceStats />}

@@ -223,3 +223,140 @@ export const sharedSignals = pgTable("shared_signals", {
 
 export type SharedSignal = typeof sharedSignals.$inferSelect;
 export type InsertSharedSignal = typeof sharedSignals.$inferInsert;
+
+// ============================================================
+// AI BRAIN TABLES - Self-Learning Intelligence System
+// ============================================================
+
+/**
+ * AI Strategy Weights - stores learned weights per strategy/pair/timeframe
+ * Updated automatically as the AI learns from signal outcomes
+ */
+export const aiStrategyWeights = pgTable("ai_strategy_weights", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  pair: varchar("pair", { length: 20 }).notNull(),          // e.g., EUR/USD
+  strategy: varchar("strategy", { length: 20 }).notNull(),  // swing, day, trend, momentum
+  timeframe: varchar("timeframe", { length: 10 }).notNull(), // 15m, 1h, 4h, 1d
+  // Indicator weights (0.0 - 2.0, default 1.0 = neutral)
+  macdWeight: varchar("macdWeight", { length: 10 }).default("1.0").notNull(),
+  rsiWeight: varchar("rsiWeight", { length: 10 }).default("1.0").notNull(),
+  bbWeight: varchar("bbWeight", { length: 10 }).default("1.0").notNull(),
+  smaWeight: varchar("smaWeight", { length: 10 }).default("1.0").notNull(),
+  atrWeight: varchar("atrWeight", { length: 10 }).default("1.0").notNull(),
+  // Performance metrics
+  totalSignals: varchar("totalSignals", { length: 10 }).default("0").notNull(),
+  winCount: varchar("winCount", { length: 10 }).default("0").notNull(),
+  lossCount: varchar("lossCount", { length: 10 }).default("0").notNull(),
+  winRate: varchar("winRate", { length: 10 }).default("0").notNull(),       // percentage
+  avgPlPips: varchar("avgPlPips", { length: 20 }).default("0").notNull(),   // avg P/L in pips
+  confidenceScore: varchar("confidenceScore", { length: 10 }).default("50").notNull(), // 0-100
+  lastUpdated: timestamp("lastUpdated").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AiStrategyWeight = typeof aiStrategyWeights.$inferSelect;
+export type InsertAiStrategyWeight = typeof aiStrategyWeights.$inferInsert;
+
+/**
+ * AI Learning Data - records every signal outcome for learning
+ * This is the AI's memory of what worked and what didn't
+ */
+export const aiLearningData = pgTable("ai_learning_data", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  signalId: varchar("signalId", { length: 64 }).notNull(),
+  pair: varchar("pair", { length: 20 }).notNull(),
+  strategy: varchar("strategy", { length: 20 }).notNull(),
+  timeframe: varchar("timeframe", { length: 10 }).notNull(),
+  signalType: varchar("signalType", { length: 10 }).notNull(), // BUY, SELL
+  // Signal parameters at time of generation
+  entryPrice: varchar("entryPrice", { length: 20 }).notNull(),
+  stopLoss: varchar("stopLoss", { length: 20 }).notNull(),
+  takeProfit: varchar("takeProfit", { length: 20 }).notNull(),
+  strength: varchar("strength", { length: 5 }).notNull(),
+  // Market context when signal was generated
+  rsiValue: varchar("rsiValue", { length: 10 }),
+  macdValue: varchar("macdValue", { length: 20 }),
+  bbPosition: varchar("bbPosition", { length: 20 }), // above/below/at band
+  trendDirection: varchar("trendDirection", { length: 10 }), // up/down/sideways
+  volatility: varchar("volatility", { length: 10 }), // low/medium/high
+  marketSession: varchar("marketSession", { length: 20 }), // london/newyork/tokyo/sydney
+  // Outcome (filled when signal resolves)
+  outcome: varchar("outcome", { length: 20 }), // target_hit, stop_loss_hit, expired, active
+  plPips: varchar("plPips", { length: 20 }),
+  plDollars: varchar("plDollars", { length: 20 }),
+  durationHours: varchar("durationHours", { length: 10 }),
+  // AI analysis
+  aiConfidence: varchar("aiConfidence", { length: 10 }), // 0-100 at time of signal
+  aiReasoning: text("aiReasoning"),                       // LLM reasoning text
+  lessonsLearned: text("lessonsLearned"),                 // Post-outcome AI analysis
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  resolvedAt: timestamp("resolvedAt"),
+});
+
+export type AiLearningData = typeof aiLearningData.$inferSelect;
+export type InsertAiLearningData = typeof aiLearningData.$inferInsert;
+
+/**
+ * AI Signal Feedback - user feedback on signal quality
+ * Helps AI learn from human expertise
+ */
+export const feedbackTypeEnum = pgEnum("feedbackType", ["thumbs_up", "thumbs_down", "entered_trade", "skipped_trade"]);
+
+export const aiSignalFeedback = pgTable("ai_signal_feedback", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  signalId: varchar("signalId", { length: 64 }).notNull(),
+  userId: varchar("userId", { length: 64 }).notNull(),
+  feedbackType: feedbackTypeEnum("feedbackType").notNull(),
+  comment: text("comment"),
+  userExpertiseLevel: varchar("userExpertiseLevel", { length: 20 }).default("beginner"), // beginner/intermediate/expert
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AiSignalFeedback = typeof aiSignalFeedback.$inferSelect;
+export type InsertAiSignalFeedback = typeof aiSignalFeedback.$inferInsert;
+
+/**
+ * AI Market Context - stores AI's analysis of current market conditions
+ * Updated periodically to give context to signal generation
+ */
+export const aiMarketContext = pgTable("ai_market_context", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  pair: varchar("pair", { length: 20 }).notNull(),
+  // AI-generated market analysis
+  trendStrength: varchar("trendStrength", { length: 10 }), // 0-100
+  trendDirection: varchar("trendDirection", { length: 10 }), // bullish/bearish/neutral
+  volatilityLevel: varchar("volatilityLevel", { length: 10 }), // low/medium/high/extreme
+  supportLevel: varchar("supportLevel", { length: 20 }),
+  resistanceLevel: varchar("resistanceLevel", { length: 20 }),
+  keyRiskFactors: text("keyRiskFactors"),   // JSON array of risk factors
+  marketSentiment: varchar("marketSentiment", { length: 20 }), // bullish/bearish/neutral/mixed
+  aiSummary: text("aiSummary"),             // LLM-generated market summary
+  recommendedStrategy: varchar("recommendedStrategy", { length: 20 }), // best strategy for current conditions
+  confidenceScore: varchar("confidenceScore", { length: 10 }), // 0-100
+  nextUpdateAt: timestamp("nextUpdateAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type AiMarketContext = typeof aiMarketContext.$inferSelect;
+export type InsertAiMarketContext = typeof aiMarketContext.$inferInsert;
+
+/**
+ * AI Brain Stats - global learning statistics for display
+ */
+export const aiBrainStats = pgTable("ai_brain_stats", {
+  id: varchar("id", { length: 64 }).primaryKey().default("global"),
+  totalSignalsAnalyzed: varchar("totalSignalsAnalyzed", { length: 20 }).default("0").notNull(),
+  totalOutcomesLearned: varchar("totalOutcomesLearned", { length: 20 }).default("0").notNull(),
+  overallWinRate: varchar("overallWinRate", { length: 10 }).default("0").notNull(),
+  bestPair: varchar("bestPair", { length: 20 }),
+  bestStrategy: varchar("bestStrategy", { length: 20 }),
+  bestTimeframe: varchar("bestTimeframe", { length: 10 }),
+  learningVersion: varchar("learningVersion", { length: 10 }).default("1.0").notNull(),
+  lastLearningCycle: timestamp("lastLearningCycle"),
+  totalFeedbackReceived: varchar("totalFeedbackReceived", { length: 20 }).default("0").notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type AiBrainStats = typeof aiBrainStats.$inferSelect;
+export type InsertAiBrainStats = typeof aiBrainStats.$inferInsert;

@@ -551,3 +551,18 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Changed query enabled condition from `mounted && isPremium && !isLocked` to just `mounted`
 - [x] Updated comment to reflect P/L is now a teaser for all users
 - [x] Ready to deploy to Render
+
+## Phase 41: Self-Learning AI Brain - COMPLETE ✅
+- [x] Add AI brain database tables (ai_learning_data, ai_strategy_weights, ai_signal_feedback, ai_market_context, ai_brain_stats)
+- [x] Run database migration for AI tables (schema generated, deploys with app)
+- [x] Create aiBrain.ts service with LLM integration (analyzeWithAI, learnFromOutcome, generateMarketContext)
+- [x] Create learning engine for outcome tracking and weight updates (inside aiBrain.ts)
+- [x] Create aiRouter.ts with tRPC endpoints for AI features (getBrainStats, analyzeSignal, submitFeedback, etc.)
+- [x] Integrate AI brain into signal generation (aiSignalEngine.ts with full technical analysis)
+- [x] Create AIInsightsPanel.tsx component for dashboard
+- [x] Create AISignalCard.tsx with AI reasoning display and feedback buttons
+- [x] Add signal feedback buttons (thumbs up/down/entered/skipped) to AI signal cards
+- [x] Add AI Brain page at /ai-brain route with leaderboard, history, lessons tabs
+- [x] Add AI Brain navigation button to Dashboard (desktop + mobile)
+- [x] Vitest tests written and passing (5/5)
+- [ ] Create checkpoint and deploy
