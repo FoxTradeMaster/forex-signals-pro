@@ -1257,3 +1257,93 @@ export async function getUserSharedSignals(userId: string) {
     return [];
   }
 }
+
+/**
+ * Generate a unique referral code for a user
+ */
+export async function generateReferralCode(userId: string): Promise<string> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Check if user already has a referral code
+  const existing = await db.select({ referralCode: users.referralCode }).from(users).where(eq(users.id, userId)).limit(1);
+  if (existing.length > 0 && existing[0].referralCode) {
+    return existing[0].referralCode;
+  }
+
+  // Generate a unique 8-character alphanumeric code
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 8; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+
+  await db.update(users).set({ referralCode: code }).where(eq(users.id, userId));
+  return code;
+}
+
+/**
+ * Get referral stats for a user
+ */
+export async function getReferralStats(userId: string) {
+  const db = await getDb();
+  if (!db) return { referralCode: null, referralCount: 0 };
+
+  const result = await db
+    .select({ referralCode: users.referralCode, referralCount: users.referralCount })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (result.length === 0) return { referralCode: null, referralCount: 0 };
+  return { referralCode: result[0].referralCode ?? null, referralCount: result[0].referralCount ?? 0 };
+}
+
+/**
+ * Track a referral when a new user signs up with a referral code
+ */
+export async function trackReferral(referralCode: string, newUserId: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  try {
+    const referrer = await db
+      .select({ id: users.id, referralCount: users.referralCount })
+      .from(users)
+      .where(eq(users.referralCode, referralCode))
+      .limit(1);
+
+    if (referrer.length === 0) return false;
+    const referrerId = referrer[0].id;
+    if (referrerId === newUserId) return false;
+
+    await db.update(users).set({ referredBy: referrerId }).where(eq(users.id, newUserId));
+    await db.update(users).set({ referralCount: (referrer[0].referralCount ?? 0) + 1 }).where(eq(users.id, referrerId));
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to track referral:", error);
+    return false;
+  }
+}
+
+/**
+ * Get the highest AI confidence signal for Signal of the Day
+ */
+export async function getSignalOfTheDay() {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const result = await db
+      .select()
+      .from(signals)
+      .where(eq(signals.isAiGenerated, "true"))
+      .orderBy(desc(signals.aiConfidence), desc(signals.createdAt))
+      .limit(1);
+
+    return result.length > 0 ? result[0] : null;
+  } catch (error) {
+    console.error("[Database] Failed to get signal of the day:", error);
+    return null;
+  }
+}

@@ -17,6 +17,7 @@ import TradeJournal from "./pages/TradeJournal";
 import Analytics from "./pages/Analytics";
 import ShareSignal from "./pages/ShareSignal";
 import AIBrain from "./pages/AIBrain";
+import Referral from "./pages/Referral";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/analytics" component={Analytics} />
       <Route path="/share/:shareId" component={ShareSignal} />
       <Route path="/ai-brain" component={AIBrain} />
+      <Route path="/referral" component={Referral} />
       <Route path={"/404"} component={NotFound} />      {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>

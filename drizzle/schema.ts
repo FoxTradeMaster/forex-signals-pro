@@ -1,4 +1,4 @@
-import { pgTable, varchar, text, timestamp, pgEnum, boolean } from "drizzle-orm/pg-core";
+import { pgTable, varchar, text, timestamp, pgEnum, boolean, integer } from "drizzle-orm/pg-core";
 
 /**
  * Core user table backing auth flow.
@@ -20,6 +20,9 @@ export const users = pgTable("users", {
   subscriptionExpiry: timestamp("subscriptionExpiry"),
   createdAt: timestamp("createdAt").defaultNow(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow(),
+  referralCode: varchar("referralCode", { length: 16 }).unique(),
+  referredBy: varchar("referredBy", { length: 64 }),
+  referralCount: integer("referralCount").default(0).notNull(),
 });
 
 export type User = typeof users.$inferSelect;

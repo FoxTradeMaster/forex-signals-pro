@@ -15,6 +15,7 @@ import { useAudioNotification } from "@/hooks/useAudioNotification";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { RefreshCw, Volume2, VolumeX, TrendingUp, Clock, Zap, Filter, Crown, Search, Bell, BookOpen, BarChart3, Brain } from "lucide-react";
 import AIInsightsPanel from "@/components/AIInsightsPanel";
+import { SignalOfTheDayBanner } from "@/components/SignalOfTheDayBanner";
 import { toast } from "sonner";
 
 export default function Dashboard() {
@@ -331,6 +332,15 @@ export default function Dashboard() {
                 AI Brain
               </Button>
 
+              {/* Refer a Friend Button */}
+              <Button
+                onClick={() => window.location.href = "/referral"}
+                variant="outline"
+                className="border-2 border-orange-400 text-orange-600 hover:bg-orange-50 md:text-sm lg:text-base px-3 md:px-4 py-2"
+              >
+                🦊 Refer a Friend
+              </Button>
+
               {/* Admin Button (only for admins) */}
               {user?.role === 'admin' && (
                 <Button
@@ -488,6 +498,15 @@ export default function Dashboard() {
             >
               <Brain className="h-4 w-4 mr-2" />
               AI Brain
+            </Button>
+
+            {/* Refer a Friend Button (mobile) */}
+            <Button
+              onClick={() => window.location.href = "/referral"}
+              variant="outline"
+              className="w-full border-2 border-orange-400 text-orange-600 hover:bg-orange-50"
+            >
+              🦊 Refer a Friend
             </Button>
 
             {/* Alert Settings, Trade Journal, and Analytics Buttons */}
@@ -732,6 +751,8 @@ export default function Dashboard() {
           </div>
 
           <TabsContent value="all" className="space-y-4">
+            {/* Signal of the Day Banner */}
+            <SignalOfTheDayBanner />
             {signalsLoading ? (
               <div className="text-center py-12">
                 <RefreshCw className="h-8 w-8 animate-spin mx-auto text-orange-500" />

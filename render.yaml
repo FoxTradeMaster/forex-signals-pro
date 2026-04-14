@@ -70,6 +70,30 @@ services:
       - key: FROM_EMAIL
         value: noreply@foxtrademaster.com
 
+  # Cron Job for Automatic Signal Generation (every 4 hours)
+  - type: cron
+    name: auto-signal-generator
+    env: node
+    region: oregon
+    schedule: "0 */4 * * *"  # Every 4 hours
+    buildCommand: pnpm install
+    startCommand: tsx server/cron/generateSignals.ts
+    envVars:
+      - key: NODE_VERSION
+        value: 22.13.0
+      - key: PNPM_VERSION
+        value: 10.4.1
+      - key: DATABASE_URL
+        fromDatabase:
+          name: forex-db
+          property: connectionString
+      - key: POLYGON_API_KEY
+        sync: false
+      - key: BUILT_IN_FORGE_API_KEY
+        sync: false
+      - key: BUILT_IN_FORGE_API_URL
+        sync: false
+
   # Cron Job for AI Brain Self-Learning (every hour)
   - type: cron
     name: ai-brain-learning

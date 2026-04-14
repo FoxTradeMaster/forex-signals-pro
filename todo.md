@@ -613,4 +613,24 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Set up AI learning cron job (runs every hour, calls checkAndLearnFromResolvedSignals)
 - [x] Created server/cron/aiLearning.ts cron script
 - [x] Added ai-brain-learning cron job to render.yaml (schedule: 0 * * * *)
+- [x] Push all changes to GitHub
+
+
+## Phase 58: Referral System, AI Badges & Signal of the Day
+- [x] Add referral_code and referral_count columns to users table (schema + migration)
+- [x] Add referral tracking to db.ts (generateReferralCode, getReferralStats, trackReferral, getSignalOfTheDay)
+- [x] Add referral tRPC router with getMyReferral, trackReferral, getSignalOfTheDay endpoints
+- [x] Create Referral page at /referral with share link, copy button, social share (Twitter/WhatsApp/Telegram/Email)
+- [x] Add Referral nav button to Dashboard (desktop + mobile)
+- [x] Add AI confidence badge (purple "AI X%") to SignalCard for AI-enhanced signals
+- [x] Add Signal of the Day banner to Dashboard (highest AI confidence signal, pinned top)
+- [x] Add getSignalOfTheDay tRPC endpoint
 - [ ] Push all changes to GitHub
+
+## Phase 59: Signal Generation Health Check & Auto-Generation Cron
+- [x] Diagnosed root cause: no automatic signal generation cron job existed
+- [x] Created server/cron/generateSignals.ts - runs every 4 hours, AI + standard engine
+- [x] Added auto-signal-generator cron job to render.yaml (schedule: 0 */4 * * *)
+- [x] Fixed TypeScript compile error in generateSignals.ts (wrong import path for checkAndLearnFromResolvedSignals)
+- [x] TypeScript compiles clean (0 errors)
+- [ ] Push fix to GitHub

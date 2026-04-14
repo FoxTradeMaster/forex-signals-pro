@@ -17,6 +17,7 @@ import { sendMagicLinkEmail } from "./_core/sendMagicLinkEmail";
 import jwt from "jsonwebtoken";
 import { ENV } from "./_core/env";
 import { aiRouter } from "./routers/aiRouter";
+import { referralRouter } from "./routers/referralRouter";
 import { generateAISignal, checkAndLearnFromResolvedSignals } from "./aiSignalEngine";
 
 // Top major pairs to enhance with AI reasoning (fast, high-value)
@@ -1078,6 +1079,7 @@ export const appRouter = router({
 
   // AI Brain router
   ai: aiRouter,
+  referral: referralRouter,
 
   // Signal Sharing router
   sharing: router({
