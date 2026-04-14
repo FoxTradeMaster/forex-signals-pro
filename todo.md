@@ -625,7 +625,7 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Add AI confidence badge (purple "AI X%") to SignalCard for AI-enhanced signals
 - [x] Add Signal of the Day banner to Dashboard (highest AI confidence signal, pinned top)
 - [x] Add getSignalOfTheDay tRPC endpoint
-- [ ] Push all changes to GitHub
+- [x] Push all changes to GitHub
 
 ## Phase 59: Signal Generation Health Check & Auto-Generation Cron
 - [x] Diagnosed root cause: no automatic signal generation cron job existed
@@ -633,4 +633,10 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Added auto-signal-generator cron job to render.yaml (schedule: 0 */4 * * *)
 - [x] Fixed TypeScript compile error in generateSignals.ts (wrong import path for checkAndLearnFromResolvedSignals)
 - [x] TypeScript compiles clean (0 errors)
-- [ ] Push fix to GitHub
+- [x] Push fix to GitHub
+
+## Phase 60: Fix Signal Generation (Missing AI Columns in Production DB)
+- [x] Made saveSignal backwards-compatible - catches column errors and retries without AI fields
+- [x] Made getSignalOfTheDay backwards-compatible - falls back to most recent active signal
+- [x] TypeScript compiles clean (0 errors)
+- [ ] Push fix to GitHub so Render deploys immediately

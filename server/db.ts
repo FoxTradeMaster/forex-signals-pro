@@ -100,9 +100,33 @@ export async function saveSignal(signal: InsertSignal) {
 
   try {
     await db.insert(signals).values(signal);
-  } catch (error) {
-    console.error("[Database] Failed to save signal:", error);
-    throw error;
+  } catch (error: any) {
+    // If the error is about missing AI columns (production DB not yet migrated),
+    // retry without the AI fields so standard signals still save successfully.
+    const msg = String(error?.message || error);
+    const isMissingColumnError =
+      msg.includes('aiReasoning') ||
+      msg.includes('aiConfidence') ||
+      msg.includes('aiKeyFactors') ||
+      msg.includes('aiInsight') ||
+      msg.includes('isAiGenerated') ||
+      msg.includes('column') ||
+      msg.includes('does not exist') ||
+      msg.includes('Unknown column');
+
+    if (isMissingColumnError) {
+      console.warn('[Database] AI columns missing in DB, saving signal without AI fields (run pnpm db:push to migrate).');
+      const { aiReasoning, aiConfidence, aiKeyFactors, aiInsight, isAiGenerated, ...baseSignal } = signal as any;
+      try {
+        await db.insert(signals).values(baseSignal as any);
+      } catch (retryError) {
+        console.error('[Database] Failed to save signal even without AI fields:', retryError);
+        throw retryError;
+      }
+    } else {
+      console.error('[Database] Failed to save signal:', error);
+      throw error;
+    }
   }
 }
 
@@ -1342,7 +1366,23 @@ export async function getSignalOfTheDay() {
       .limit(1);
 
     return result.length > 0 ? result[0] : null;
-  } catch (error) {
+  } catch (error: any) {
+    // If AI columns don't exist yet, fall back to most recent active signal
+    const msg = String(error?.message || error);
+    if (msg.includes('isAiGenerated') || msg.includes('aiConfidence') || msg.includes('column') || msg.includes('does not exist')) {
+      console.warn('[Database] AI columns missing, returning most recent signal as Signal of the Day');
+      try {
+        const fallback = await db
+          .select()
+          .from(signals)
+          .where(eq(signals.isActive, "true"))
+          .orderBy(desc(signals.createdAt))
+          .limit(1);
+        return fallback.length > 0 ? fallback[0] : null;
+      } catch {
+        return null;
+      }
+    }
     console.error("[Database] Failed to get signal of the day:", error);
     return null;
   }
