@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAudioNotification } from "@/hooks/useAudioNotification";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { RefreshCw, Volume2, VolumeX, TrendingUp, Clock, Zap, Filter, Crown, Search, Bell, BookOpen, BarChart3, Brain } from "lucide-react";
+import { RefreshCw, Volume2, VolumeX, TrendingUp, Clock, Zap, Filter, Crown, Search, Bell, BookOpen, BarChart3, Brain, Flame, Activity } from "lucide-react";
 import AIInsightsPanel from "@/components/AIInsightsPanel";
 import { SignalOfTheDayBanner } from "@/components/SignalOfTheDayBanner";
 import { toast } from "sonner";
@@ -52,6 +52,12 @@ export default function Dashboard() {
   const { data: signals, isLoading: signalsLoading, refetch: refetchSignals } = 
     trpc.signals.getActive.useQuery({ limit: 50 });
 
+  // Fetch signal stats (count, last generated, streak)
+  const { data: signalStats, refetch: refetchStats } = trpc.signals.getStats.useQuery(undefined, {
+    refetchOnWindowFocus: false,
+    staleTime: 60 * 1000, // 1 minute
+  });
+
   // Fetch market statuses
   const { data: marketStatuses } = trpc.market.getAllPairStatuses.useQuery();
 
@@ -68,6 +74,7 @@ export default function Dashboard() {
       toast.success(`Generated ${newSignals.length} new trading signals!`);
       setLastUpdated(new Date());
       refetchSignals();
+      refetchStats();
     },
     onError: (error) => {
       toast.error(`Failed to generate signals: ${error.message}`);
@@ -167,6 +174,21 @@ export default function Dashboard() {
   const buySignals = filterSignals(signals?.filter(s => s.signalType === "BUY")) || [];
   const sellSignals = filterSignals(signals?.filter(s => s.signalType === "SELL")) || [];
 
+  // Format last generated time as relative string
+  const formatLastGenerated = (date: Date | string | null | undefined): string => {
+    if (!date) return 'Never';
+    const d = new Date(date);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d ago`;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50">
       {/* Header */}
@@ -196,9 +218,25 @@ export default function Dashboard() {
                       <Badge variant="outline" className="text-gray-600">FREE</Badge>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Advanced Forex Trading Signals • {availablePairs} Pair{availablePairs > 1 ? 's' : ''}
-                  </p>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <p className="text-sm text-muted-foreground">
+                      Advanced Forex Trading Signals • {availablePairs} Pair{availablePairs > 1 ? 's' : ''}
+                    </p>
+                    {/* Active Signal Count Badge */}
+                    {signalStats && signalStats.activeCount > 0 && (
+                      <Badge className="bg-green-500 text-white text-xs px-2 py-0.5">
+                        <Activity className="h-3 w-3 mr-1" />
+                        {signalStats.activeCount} Active Signal{signalStats.activeCount !== 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                    {/* Streak Badge */}
+                    {signalStats && signalStats.streakDays > 0 && (
+                      <Badge variant="outline" className="text-orange-600 border-orange-400 text-xs px-2 py-0.5">
+                        <Flame className="h-3 w-3 mr-1" />
+                        {signalStats.streakDays} Day Streak
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -253,14 +291,22 @@ export default function Dashboard() {
 
             {/* Row 2: Action Buttons */}
             <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 max-w-full px-2">
-              <Button
-                onClick={handleGenerateSignals}
-                disabled={generateSignals.isPending}
-                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 md:text-sm lg:text-base px-3 md:px-4 py-2"
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${generateSignals.isPending ? "animate-spin" : ""}`} />
-                Generate Signals
-              </Button>
+              {/* Generate Signals button with Last Generated timestamp below */}
+              <div className="flex flex-col items-center gap-0.5">
+                <Button
+                  onClick={handleGenerateSignals}
+                  disabled={generateSignals.isPending}
+                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 md:text-sm lg:text-base px-3 md:px-4 py-2"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${generateSignals.isPending ? "animate-spin" : ""}`} />
+                  Generate Signals
+                </Button>
+                {signalStats?.lastGeneratedAt && (
+                  <span className="text-[10px] text-muted-foreground">
+                    Last: {formatLastGenerated(signalStats.lastGeneratedAt)}
+                  </span>
+                )}
+              </div>
 
               {/* VPS Button */}
               <Button
@@ -402,9 +448,23 @@ export default function Dashboard() {
                     <Badge variant="outline" className="text-gray-600 text-xs">FREE</Badge>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {availablePairs} Pair{availablePairs > 1 ? 's' : ''}
-                </p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-xs text-muted-foreground">
+                    {availablePairs} Pair{availablePairs > 1 ? 's' : ''}
+                  </p>
+                  {signalStats && signalStats.activeCount > 0 && (
+                    <Badge className="bg-green-500 text-white text-[10px] px-1.5 py-0">
+                      <Activity className="h-2.5 w-2.5 mr-0.5" />
+                      {signalStats.activeCount} Active
+                    </Badge>
+                  )}
+                  {signalStats && signalStats.streakDays > 0 && (
+                    <Badge variant="outline" className="text-orange-600 border-orange-400 text-[10px] px-1.5 py-0">
+                      <Flame className="h-2.5 w-2.5 mr-0.5" />
+                      {signalStats.streakDays}d Streak
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -451,14 +511,21 @@ export default function Dashboard() {
             </Card>
 
             {/* Generate Signals Button */}
-            <Button
-              onClick={handleGenerateSignals}
-              disabled={generateSignals.isPending}
-              className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${generateSignals.isPending ? "animate-spin" : ""}`} />
-              Generate Signals
-            </Button>
+            <div className="space-y-0.5">
+              <Button
+                onClick={handleGenerateSignals}
+                disabled={generateSignals.isPending}
+                className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${generateSignals.isPending ? "animate-spin" : ""}`} />
+                Generate Signals
+              </Button>
+              {signalStats?.lastGeneratedAt && (
+                <p className="text-[10px] text-muted-foreground text-center">
+                  Last generated: {formatLastGenerated(signalStats.lastGeneratedAt)}
+                </p>
+              )}
+            </div>
 
             {/* VPS and Book Buttons */}
             <div className="grid grid-cols-2 gap-2">

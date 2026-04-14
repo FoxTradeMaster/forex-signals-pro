@@ -7,7 +7,7 @@ import { fetchForexData, fetchAllForexData, fetchForexDataForUser, getPairSymbol
 import { getPairMarketStatus, isForexMarketOpen, getCurrentSessionName, formatTimeUntilOpen } from "./marketHours";
 import { SignalEngine } from "./signalEngine";
 import { MomentumWindowAnalyzer } from "./momentumWindow";
-import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist, getDb, getUser, getPaymentByEmail, linkPaymentToUser, getAllPayments, getAllUsers, updateUserSubscription, upsertSignalPerformance, getSignalPerformance, getHistoricalPerformance, getWinRateByPair, getPerformanceByTimeframe, getStrategyPerformance, getDailyPLTrend, createSharedSignal, getSharedSignal, getUserSharedSignals } from "./db";
+import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist, getDb, getUser, getPaymentByEmail, linkPaymentToUser, getAllPayments, getAllUsers, updateUserSubscription, upsertSignalPerformance, getSignalPerformance, getHistoricalPerformance, getWinRateByPair, getPerformanceByTimeframe, getStrategyPerformance, getDailyPLTrend, createSharedSignal, getSharedSignal, getUserSharedSignals, getSignalStats } from "./db";
 import { users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { createPayPalOrder, capturePayPalOrder } from "./paypal";
@@ -430,6 +430,11 @@ export const appRouter = router({
 
         return signals;
       }),
+
+    // Get signal stats (count, last generated, streak)
+    getStats: publicProcedure.query(async () => {
+      return await getSignalStats();
+    }),
 
     // Get active signals
     getActive: publicProcedure

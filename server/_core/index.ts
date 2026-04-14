@@ -8,6 +8,31 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { handlePayPalWebhook } from "../paypalWebhook";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Auto-run DB migrations on startup so the schema is always current
+async function runMigrationsOnStartup() {
+  if (!process.env.DATABASE_URL) {
+    console.warn('[DB] DATABASE_URL not set, skipping auto-migration.');
+    return;
+  }
+  try {
+    const { drizzle } = await import('drizzle-orm/postgres-js');
+    const { migrate } = await import('drizzle-orm/postgres-js/migrator');
+    const postgres = (await import('postgres')).default;
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const migrationsFolder = path.resolve(__dirname, '../../drizzle');
+    const client = postgres(process.env.DATABASE_URL, { max: 1 });
+    const db = drizzle(client);
+    await migrate(db, { migrationsFolder });
+    await client.end();
+    console.log('[DB] Auto-migration completed successfully.');
+  } catch (err: any) {
+    // Non-fatal: log and continue — the server should still start
+    console.warn('[DB] Auto-migration warning (non-fatal):', err?.message || err);
+  }
+}
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -29,6 +54,9 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  // Run DB migrations before starting the server
+  await runMigrationsOnStartup();
+
   const app = express();
   const server = createServer(app);
   // Configure body parser with larger size limit for file uploads

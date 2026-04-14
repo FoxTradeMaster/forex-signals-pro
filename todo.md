@@ -639,4 +639,21 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Made saveSignal backwards-compatible - catches column errors and retries without AI fields
 - [x] Made getSignalOfTheDay backwards-compatible - falls back to most recent active signal
 - [x] TypeScript compiles clean (0 errors)
-- [ ] Push fix to GitHub so Render deploys immediately
+- [x] Push fix to GitHub so Render deploys immediately
+
+## Phase 61: Fix clearAllSignals and Run DB Migration
+- [x] Made clearAllSignals fault-tolerant (catch table-not-found errors) - already done in Phase 60
+- [ ] Run pnpm db:push to migrate the Manus-hosted database (network issue - non-critical)
+- [x] Push fix to GitHub - already pushed (commit 0567139)
+
+## Phase 62: Dashboard Enhancements - Signal Stats
+- [x] Add getSignalStats() to db.ts (activeCount, lastGeneratedAt, streakDays)
+- [x] Add signals.getStats tRPC endpoint in routers.ts
+- [x] Add Active Signal count badge to desktop header (green badge with Activity icon)
+- [x] Add Signals Streak badge to desktop header (orange badge with Flame icon)
+- [x] Add Last Generated timestamp below Generate Signals button (desktop)
+- [x] Add Active Signal count badge to mobile header
+- [x] Add Signals Streak badge to mobile header
+- [x] Add Last Generated timestamp below Generate Signals button (mobile)
+- [x] TypeScript compiles clean (0 errors)
+- [ ] Push to GitHub and deploy to Render

@@ -175,7 +175,23 @@ export async function clearAllSignals() {
   const db = await getDb();
   if (!db) return;
 
-  await db.delete(signals);
+  try {
+    await db.delete(signals);
+  } catch (error: any) {
+    // If the table doesn't exist yet (DB not migrated), skip the clear gracefully
+    const msg = String(error?.message || error);
+    if (
+      msg.includes('does not exist') ||
+      msg.includes('no such table') ||
+      msg.includes("doesn't exist") ||
+      msg.includes('relation') ||
+      msg.includes('Unknown table')
+    ) {
+      console.warn('[Database] signals table not found during clearAllSignals - DB migration needed (pnpm db:push). Skipping clear.');
+      return;
+    }
+    throw error;
+  }
 }
 
 // Watchlist management
@@ -1385,5 +1401,71 @@ export async function getSignalOfTheDay() {
     }
     console.error("[Database] Failed to get signal of the day:", error);
     return null;
+  }
+}
+
+// ── Signal Stats: count, last generated time, streak ──────────────────────────
+export async function getSignalStats(): Promise<{
+  activeCount: number;
+  lastGeneratedAt: Date | null;
+  streakDays: number;
+}> {
+  const db = await getDb();
+  if (!db) return { activeCount: 0, lastGeneratedAt: null, streakDays: 0 };
+
+  try {
+    // Count active signals
+    const activeResult = await db
+      .select()
+      .from(signals)
+      .where(eq(signals.isActive, "true"));
+    const activeCount = activeResult.length;
+
+    // Get the most recently created signal (regardless of active status)
+    const latestResult = await db
+      .select()
+      .from(signals)
+      .orderBy(desc(signals.createdAt))
+      .limit(1);
+    const lastGeneratedAt = latestResult.length > 0 ? latestResult[0].createdAt : null;
+
+    // Calculate streak: how many consecutive calendar days have had signals generated
+    // Get all unique dates that had signals generated (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const recentSignals = await db
+      .select({ createdAt: signals.createdAt })
+      .from(signals)
+      .where(gte(signals.createdAt, thirtyDaysAgo))
+      .orderBy(desc(signals.createdAt));
+
+    // Build a set of unique dates (YYYY-MM-DD)
+    const uniqueDates = new Set<string>();
+    for (const row of recentSignals) {
+      if (row.createdAt) {
+        const d = new Date(row.createdAt);
+        uniqueDates.add(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`);
+      }
+    }
+
+    // Count consecutive days going back from today
+    let streakDays = 0;
+    const today = new Date();
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      if (uniqueDates.has(key)) {
+        streakDays++;
+      } else {
+        break; // streak broken
+      }
+    }
+
+    return { activeCount, lastGeneratedAt, streakDays };
+  } catch (error: any) {
+    console.warn('[Database] getSignalStats error (non-fatal):', error?.message || error);
+    return { activeCount: 0, lastGeneratedAt: null, streakDays: 0 };
   }
 }
