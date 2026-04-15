@@ -181,6 +181,39 @@ async function startServer() {
     }
   });
 
+  // Health check endpoint — shows DB status and migration state
+  app.get("/api/health", async (req, res) => {
+    const status: Record<string, any> = {
+      ok: true,
+      timestamp: new Date().toISOString(),
+      env: {
+        DATABASE_URL: process.env.DATABASE_URL ? `SET (${process.env.DATABASE_URL.slice(0, 20)}...)` : 'NOT SET',
+        POLYGON_API_KEY: process.env.POLYGON_API_KEY ? `SET (${process.env.POLYGON_API_KEY.length} chars)` : 'NOT SET',
+        NODE_ENV: process.env.NODE_ENV || 'unknown',
+      },
+      db: { connected: false, signalsTable: false, signalCount: 0, error: null as string | null },
+    };
+    try {
+      const { getDb } = await import('../db');
+      const { signals } = await import('../../drizzle/schema');
+      const db = await getDb();
+      if (db) {
+        status.db.connected = true;
+        try {
+          const rows = await db.select().from(signals).limit(5);
+          status.db.signalsTable = true;
+          status.db.signalCount = rows.length;
+        } catch (e: any) {
+          status.db.signalsTable = false;
+          status.db.error = e?.message?.slice(0, 200);
+        }
+      }
+    } catch (e: any) {
+      status.db.error = e?.message?.slice(0, 200);
+    }
+    res.json(status);
+  });
+
   // PayPal webhook endpoint
   app.post("/api/paypal/webhook", handlePayPalWebhook);
   // tRPC API
