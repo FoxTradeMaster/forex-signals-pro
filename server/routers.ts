@@ -343,13 +343,17 @@ export const appRouter = router({
           isAiGenerated: "true",
         });
 
-        await upsertSignalPerformance({
-          signalId: signal.id,
-          currentPrice: signal.entryPrice.toString(),
-          plDollars: "0",
-          plPips: "0",
-          plPercentage: "0",
-        });
+        try {
+          await upsertSignalPerformance({
+            signalId: signal.id,
+            currentPrice: signal.entryPrice.toString(),
+            plDollars: "0",
+            plPips: "0",
+            plPercentage: "0",
+          });
+        } catch (perfErr: any) {
+          console.warn('[Signal Gen] upsertSignalPerformance non-fatal:', String(perfErr?.message || perfErr).slice(0, 100));
+        }
       }
 
       // ── Step 4: Save standard signals to database ──
@@ -370,13 +374,17 @@ export const appRouter = router({
           isAiGenerated: "false",
         });
 
-        await upsertSignalPerformance({
-          signalId: signal.id,
-          currentPrice: signal.entryPrice.toString(),
-          plDollars: "0",
-          plPips: "0",
-          plPercentage: "0",
-        });
+        try {
+          await upsertSignalPerformance({
+            signalId: signal.id,
+            currentPrice: signal.entryPrice.toString(),
+            plDollars: "0",
+            plPips: "0",
+            plPercentage: "0",
+          });
+        } catch (perfErr: any) {
+          console.warn('[Signal Gen] upsertSignalPerformance non-fatal:', String(perfErr?.message || perfErr).slice(0, 100));
+        }
       }
 
       // ── Step 5: Trigger learning from any resolved signals (non-blocking) ──

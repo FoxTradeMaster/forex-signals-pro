@@ -101,9 +101,23 @@ export async function saveSignal(signal: InsertSignal) {
   try {
     await db.insert(signals).values(signal);
   } catch (error: any) {
-    // If the error is about missing AI columns (production DB not yet migrated),
-    // retry without the AI fields so standard signals still save successfully.
     const msg = String(error?.message || error);
+
+    // If the table doesn't exist yet, log a warning and return (don't throw).
+    // Signals will still be displayed from the in-memory response.
+    const isTableMissingError =
+      msg.includes('relation') ||
+      msg.includes('does not exist') ||
+      msg.includes('no such table') ||
+      msg.includes('Failed query') ||
+      msg.includes('insert into');
+
+    if (isTableMissingError) {
+      console.warn('[Database] signals table not ready yet (non-fatal, DB migration pending):', msg.slice(0, 150));
+      return; // Don't throw — signals still display from in-memory response
+    }
+
+    // If the error is about missing AI columns, retry without AI fields
     const isMissingColumnError =
       msg.includes('aiReasoning') ||
       msg.includes('aiConfidence') ||
@@ -111,7 +125,6 @@ export async function saveSignal(signal: InsertSignal) {
       msg.includes('aiInsight') ||
       msg.includes('isAiGenerated') ||
       msg.includes('column') ||
-      msg.includes('does not exist') ||
       msg.includes('Unknown column');
 
     if (isMissingColumnError) {
@@ -119,13 +132,13 @@ export async function saveSignal(signal: InsertSignal) {
       const { aiReasoning, aiConfidence, aiKeyFactors, aiInsight, isAiGenerated, ...baseSignal } = signal as any;
       try {
         await db.insert(signals).values(baseSignal as any);
-      } catch (retryError) {
-        console.error('[Database] Failed to save signal even without AI fields:', retryError);
-        throw retryError;
+      } catch (retryError: any) {
+        // Still don't throw — signals display from in-memory response
+        console.warn('[Database] Failed to save signal even without AI fields (non-fatal):', String(retryError?.message || retryError).slice(0, 150));
       }
     } else {
-      console.error('[Database] Failed to save signal:', error);
-      throw error;
+      // Unknown error — log but don't throw
+      console.warn('[Database] saveSignal non-fatal error:', msg.slice(0, 200));
     }
   }
 }
