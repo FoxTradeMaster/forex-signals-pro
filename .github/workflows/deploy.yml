@@ -1,16 +1,14 @@
-name: Deploy to Render
-
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Trigger Render Deploy
-        run: |
-          curl -f -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+# This workflow is disabled - Render auto-deploys from GitHub pushes via render.yaml
+# No GitHub Actions workflow needed for deployment.
+#
+# To re-enable, uncomment the lines below and add RENDER_DEPLOY_HOOK_URL to GitHub Secrets:
+# name: Deploy to Render
+# on:
+#   push:
+#     branches: [main]
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Trigger Render Deploy
+#         run: curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
