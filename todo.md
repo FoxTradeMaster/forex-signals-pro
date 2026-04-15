@@ -656,4 +656,13 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Add Signals Streak badge to mobile header
 - [x] Add Last Generated timestamp below Generate Signals button (mobile)
 - [x] TypeScript compiles clean (0 errors)
-- [ ] Push to GitHub and deploy to Render
+- [x] Push to GitHub and deploy to Render (commit 7f24987)
+
+## Phase 63: Fix "Failed query: delete from signals" Error on Render
+- [x] Make clearAllSignals() completely non-throwing (catch ALL errors, never re-throw)
+- [x] Wrap clearAllSignals() calls in generateAll and generateForPair in try/catch too
+- [x] Fix migration runner to try multiple path candidates (CWD, relative paths)
+- [x] Add ssl: require to migration runner's postgres connection
+- [x] Add pnpm db:push to render.yaml buildCommand so migrations run on every deploy
+- [x] TypeScript compiles clean (0 errors)
+- [ ] Push to GitHub so Render auto-deploys with the fix

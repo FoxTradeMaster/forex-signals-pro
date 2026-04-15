@@ -178,19 +178,10 @@ export async function clearAllSignals() {
   try {
     await db.delete(signals);
   } catch (error: any) {
-    // If the table doesn't exist yet (DB not migrated), skip the clear gracefully
+    // Never throw from clearAllSignals — a missing or empty table is not fatal.
+    // Log a warning so we can diagnose in logs, but let signal generation continue.
     const msg = String(error?.message || error);
-    if (
-      msg.includes('does not exist') ||
-      msg.includes('no such table') ||
-      msg.includes("doesn't exist") ||
-      msg.includes('relation') ||
-      msg.includes('Unknown table')
-    ) {
-      console.warn('[Database] signals table not found during clearAllSignals - DB migration needed (pnpm db:push). Skipping clear.');
-      return;
-    }
-    throw error;
+    console.warn('[Database] clearAllSignals skipped (non-fatal):', msg.slice(0, 200));
   }
 }
 

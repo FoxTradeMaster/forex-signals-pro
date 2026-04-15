@@ -21,9 +21,18 @@ async function runMigrationsOnStartup() {
     const { drizzle } = await import('drizzle-orm/postgres-js');
     const { migrate } = await import('drizzle-orm/postgres-js/migrator');
     const postgres = (await import('postgres')).default;
-    const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const migrationsFolder = path.resolve(__dirname, '../../drizzle');
-    const client = postgres(process.env.DATABASE_URL, { max: 1 });
+    // Try multiple candidate paths so this works in both dev (ts-node/vite) and
+    // production (compiled to dist/) on Render.
+    const candidates = [
+      path.resolve(process.cwd(), 'drizzle'),                          // CWD/drizzle (Render)
+      path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../drizzle'), // relative to compiled file
+      path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../drizzle'),
+      path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'drizzle'),
+    ];
+    const { existsSync } = await import('fs');
+    const migrationsFolder = candidates.find(p => existsSync(p)) || candidates[0];
+    console.log('[DB] Using migrations folder:', migrationsFolder);
+    const client = postgres(process.env.DATABASE_URL, { max: 1, ssl: 'require' });
     const db = drizzle(client);
     await migrate(db, { migrationsFolder });
     await client.end();

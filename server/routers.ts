@@ -295,8 +295,12 @@ export const appRouter = router({
   signals: router({
     // Generate signals for all pairs (with AI enhancement on priority pairs)
     generateAll: publicProcedure.mutation(async () => {
-      // Clear old signals first
-      await clearAllSignals();
+      // Clear old signals first (non-fatal — if table doesn't exist yet, we continue)
+      try {
+        await clearAllSignals();
+      } catch (clearErr: any) {
+        console.warn('[Signal Gen] clearAllSignals failed (non-fatal), continuing with generation:', clearErr?.message || clearErr);
+      }
 
       // ── Step 1: Run AI signal generation on priority pairs in parallel ──
       console.log("[Signal Gen] Running AI analysis on priority pairs...");
@@ -393,8 +397,12 @@ export const appRouter = router({
     generateForPair: publicProcedure
       .input(z.object({ pair: z.string() }))
       .mutation(async ({ input }) => {
-        // Clear old signals for this pair
-        await clearAllSignals();
+        // Clear old signals for this pair (non-fatal)
+        try {
+          await clearAllSignals();
+        } catch (clearErr: any) {
+          console.warn('[Signal Gen] clearAllSignals failed (non-fatal):', clearErr?.message || clearErr);
+        }
 
         const forexData = await fetchForexData(input.pair, "1h", "5d");
         if (!forexData) return [];

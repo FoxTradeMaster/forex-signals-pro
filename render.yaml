@@ -5,7 +5,7 @@ services:
     env: node
     region: oregon
     plan: starter
-    buildCommand: pnpm install && pnpm build
+    buildCommand: pnpm install && pnpm build && pnpm db:push
     startCommand: pnpm start
     healthCheckPath: /
     envVars:
