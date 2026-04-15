@@ -703,4 +703,4 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Fixed drizzle.config.ts to exit gracefully when DATABASE_URL not set (no more throw)
 - [x] Added SSL support to drizzle.config.ts for Render's PostgreSQL connection
 - [x] Render auto-deploys from GitHub pushes via render.yaml (no Actions workflow needed)
-- [ ] Push to GitHub and verify Render deploys successfully with pnpm db:push creating tables
+- [x] Push to GitHub - commit a160610 (Render will auto-deploy, pnpm db:push will create tables)
