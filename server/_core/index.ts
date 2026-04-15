@@ -63,7 +63,10 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
-  // Run DB migrations before starting the server
+  // Bootstrap: create all tables if they don't exist (raw SQL, always works)
+  const { bootstrapDatabase } = await import('../bootstrapDb');
+  await bootstrapDatabase();
+  // Also run drizzle migrations (handles schema changes/column additions)
   await runMigrationsOnStartup();
 
   const app = express();

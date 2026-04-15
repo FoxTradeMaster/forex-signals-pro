@@ -68,11 +68,36 @@ export default function Dashboard() {
   const { data: momentumData, isLoading: momentumLoading } = 
     trpc.momentum.analyzeAll.useQuery();
 
+  // Local override for signals — set immediately from generateAll response
+  const [localSignals, setLocalSignals] = useState<typeof signals | null>(null);
+
   // Generate signals mutation
   const generateSignals = trpc.signals.generateAll.useMutation({
     onSuccess: (newSignals) => {
       toast.success(`Generated ${newSignals.length} new trading signals!`);
       setLastUpdated(new Date());
+      // Immediately display the returned signals without waiting for DB query
+      const mapped = newSignals.map((s: any) => ({
+        id: s.id,
+        pair: s.pair,
+        signalType: s.signalType,
+        strength: typeof s.strength === 'number' ? String(s.strength) : s.strength,
+        strategy: s.strategy,
+        entryPrice: typeof s.entryPrice === 'number' ? String(s.entryPrice) : s.entryPrice,
+        stopLoss: typeof s.stopLoss === 'number' ? String(s.stopLoss) : s.stopLoss,
+        takeProfit: typeof s.takeProfit === 'number' ? String(s.takeProfit) : s.takeProfit,
+        timeframe: s.timeframe,
+        reason: s.reason || s.aiReasoning || '',
+        indicators: typeof s.indicators === 'string' ? JSON.parse(s.indicators) : (s.indicators || {}),
+        createdAt: s.timestamp ? new Date(s.timestamp) : new Date(),
+        isActive: 'true',
+        aiReasoning: s.aiReasoning || null,
+        aiConfidence: s.aiConfidence != null ? String(s.aiConfidence) : null,
+        aiKeyFactors: s.aiKeyFactors ? (typeof s.aiKeyFactors === 'string' ? s.aiKeyFactors : JSON.stringify(s.aiKeyFactors)) : null,
+        aiInsight: s.aiInsight || null,
+        isAiGenerated: s.isAiGenerated ? 'true' : 'false',
+      }));
+      setLocalSignals(mapped);
       refetchSignals();
       refetchStats();
     },
@@ -170,9 +195,11 @@ export default function Dashboard() {
     return filtered;
   };
 
-  const filteredSignals = filterSignals(signals);
-  const buySignals = filterSignals(signals?.filter(s => s.signalType === "BUY")) || [];
-  const sellSignals = filterSignals(signals?.filter(s => s.signalType === "SELL")) || [];
+  // Use localSignals (from generateAll response) when DB signals are empty or not yet loaded
+  const displaySignals = (signals && signals.length > 0) ? signals : (localSignals ?? undefined);
+  const filteredSignals = filterSignals(displaySignals);
+  const buySignals = filterSignals(displaySignals?.filter(s => s.signalType === "BUY")) || [];
+  const sellSignals = filterSignals(displaySignals?.filter(s => s.signalType === "SELL")) || [];
 
   // Format last generated time as relative string
   const formatLastGenerated = (date: Date | string | null | undefined): string => {
@@ -793,7 +820,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <TabsList className="grid w-full max-w-md grid-cols-3">
             <TabsTrigger value="all">
-              All Signals ({signals?.length || 0})
+              All Signals ({displaySignals?.length || 0})
             </TabsTrigger>
             <TabsTrigger value="buy" className="text-green-600">
               BUY ({buySignals.length})

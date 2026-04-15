@@ -137,14 +137,18 @@ export async function getActiveSignals(limit = 50) {
     return [];
   }
 
-  const result = await db
-    .select()
-    .from(signals)
-    .where(eq(signals.isActive, "true"))
-    .orderBy(signals.createdAt)
-    .limit(limit);
-
-  return result;
+  try {
+    const result = await db
+      .select()
+      .from(signals)
+      .where(eq(signals.isActive, "true"))
+      .orderBy(signals.createdAt)
+      .limit(limit);
+    return result;
+  } catch (error: any) {
+    console.warn('[Database] getActiveSignals failed (table may not exist yet):', String(error?.message || error).slice(0, 200));
+    return [];
+  }
 }
 
 export async function getSignalsByPair(pair: string, limit = 20) {

@@ -666,3 +666,11 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Add pnpm db:push to render.yaml buildCommand so migrations run on every deploy
 - [x] TypeScript compiles clean (0 errors)
 - [x] Push to GitHub so Render auto-deploys with the fix (commit aa6e7a4)
+
+## Phase 64: Fix Signals Not Appearing on Dashboard
+- [x] Fix Dashboard to immediately display signals returned from generateAll mutation (localSignals state)
+- [x] Fix getActiveSignals to gracefully return [] when table missing (not throw)
+- [x] Add bootstrapDb.ts with CREATE TABLE IF NOT EXISTS SQL for all tables
+- [x] Call bootstrapDatabase() at server startup before drizzle migrations
+- [x] TypeScript compiles clean (0 errors)
+- [ ] Push to GitHub (Render) and verify signals appear
