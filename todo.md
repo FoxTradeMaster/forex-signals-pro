@@ -683,4 +683,10 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Fixed date range: always use 5-day window (gives 95 candles, well above 60-candle minimum)
 - [x] Fixed aiSignalEngine.ts: changed 30-day range to 5-day range for OHLC fetch
 - [x] TypeScript compiles clean (0 errors)
-- [ ] Push to GitHub (Render) and verify signals generate
+- [x] Push to GitHub (Render) - commit cfd2cd9
+
+## Phase 66: Fix GitHub Actions Deploy Workflow
+- [x] Diagnosed: pnpm version conflict between deploy.yml (version: 10) and package.json packageManager (pnpm@10.4.1)
+- [x] Fixed deploy.yml: removed explicit version from pnpm/action-setup (now reads from package.json automatically)
+- [x] Fixed bootstrapDb.ts: skip MySQL/TiDB databases, use correct SSL detection for Render PostgreSQL
+- [ ] Push to GitHub and verify deploy succeeds

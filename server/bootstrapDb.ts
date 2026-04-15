@@ -12,9 +12,24 @@ export async function bootstrapDatabase(): Promise<void> {
     return;
   }
 
+  // Only run on PostgreSQL (not MySQL/TiDB used in Manus preview)
+  if (!process.env.DATABASE_URL.startsWith('postgres')) {
+    console.log('[Bootstrap] Non-PostgreSQL database detected, skipping raw SQL bootstrap (drizzle migrations will handle schema).');
+    return;
+  }
+
   try {
+    // Use the same postgres client as the rest of the app (handles SSL correctly)
     const postgres = (await import('postgres')).default;
-    const client = postgres(process.env.DATABASE_URL, { max: 1, ssl: 'require' });
+    // Parse SSL from the connection string — don't force ssl:'require' as it may conflict
+    const sslOption = process.env.DATABASE_URL.includes('sslmode=require') || 
+                      process.env.DATABASE_URL.includes('ssl=true') ||
+                      process.env.DATABASE_URL.includes('render.com') ||
+                      process.env.DATABASE_URL.includes('neon.tech') ||
+                      process.env.DATABASE_URL.includes('supabase')
+      ? { rejectUnauthorized: false } 
+      : false;
+    const client = postgres(process.env.DATABASE_URL, { max: 1, ssl: sslOption as any });
 
     console.log('[Bootstrap] Creating database tables if they do not exist...');
 
