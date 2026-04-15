@@ -1,4 +1,5 @@
 import { ENV } from './_core/env';
+import { callDataApi } from './_core/dataApi';
 
 /**
  * Polygon.io API service for real-time forex prices

@@ -673,4 +673,14 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Add bootstrapDb.ts with CREATE TABLE IF NOT EXISTS SQL for all tables
 - [x] Call bootstrapDatabase() at server startup before drizzle migrations
 - [x] TypeScript compiles clean (0 errors)
-- [ ] Push to GitHub (Render) and verify signals appear
+- [x] Push to GitHub (Render) - commit e187879
+
+## Phase 65: Fix Data Source - Polygon Currencies Starter Plan
+- [x] Diagnosed root cause: Polygon Basic plan returned stale 30-day data (8 candles), Starter plan returns 95 real-time candles
+- [x] User upgraded to Polygon Currencies Starter ($49/mo, unlimited API calls, real-time)
+- [x] Verified Starter plan active: 95 candles, last candle 0.9h ago, real-time quotes working
+- [x] Reverted forexDataPolygon.ts to use Polygon (not Yahoo Finance)
+- [x] Fixed date range: always use 5-day window (gives 95 candles, well above 60-candle minimum)
+- [x] Fixed aiSignalEngine.ts: changed 30-day range to 5-day range for OHLC fetch
+- [x] TypeScript compiles clean (0 errors)
+- [ ] Push to GitHub (Render) and verify signals generate

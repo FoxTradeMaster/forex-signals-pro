@@ -1,7 +1,7 @@
 /**
- * Unified Forex Data Service - Polygon.io Integration
- * Replaces Yahoo Finance with Polygon.io for all 156 currency pairs
- * Maintains backward compatibility with existing code
+ * Unified Forex Data Service - Polygon.io (Currencies Starter Plan)
+ * Real-time data, unlimited API calls, 10+ years history
+ * 5-day hourly range returns 95+ candles — well above the 60-candle minimum
  */
 
 import { fetchPolygonForexData, fetchMultipleForexData, isPolygonConfigured } from "./polygonForexData";
@@ -28,14 +28,10 @@ export interface ForexPairData {
  */
 export function getPairsForTier(tier: 'free' | 'premium' | 'pro'): CurrencyPair[] {
   switch (tier) {
-    case 'free':
-      return FREE_PAIRS;
-    case 'premium':
-      return PREMIUM_PAIRS;
-    case 'pro':
-      return PRO_PAIRS;
-    default:
-      return FREE_PAIRS;
+    case 'free':    return FREE_PAIRS;
+    case 'premium': return PREMIUM_PAIRS;
+    case 'pro':     return PRO_PAIRS;
+    default:        return FREE_PAIRS;
   }
 }
 
@@ -44,6 +40,26 @@ export function getPairsForTier(tier: 'free' | 'premium' | 'pro'): CurrencyPair[
  */
 export function getPairSymbolsForTier(tier: 'free' | 'premium' | 'pro'): string[] {
   return getPairsForTier(tier).map(p => p.symbol);
+}
+
+/**
+ * Convert interval + range to Polygon parameters
+ * Always uses at least 5 days to ensure 60+ candles for the signal engine
+ */
+function toPolygonParams(
+  interval: "15m" | "1h" | "1d",
+  range: "1d" | "5d" | "1mo"
+): { timespan: "minute" | "hour" | "day"; daysBack: number } {
+  const timespan: "minute" | "hour" | "day" =
+    interval === "15m" ? "minute" :
+    interval === "1d"  ? "day"    : "hour";
+
+  // Always fetch at least 5 days to guarantee 60+ hourly candles
+  let daysBack = 5;
+  if (range === "1mo") daysBack = 30;
+  // "1d" and "5d" both use 5 days minimum
+
+  return { timespan, daysBack };
 }
 
 /**
@@ -59,21 +75,10 @@ export async function fetchForexData(
     return null;
   }
 
-  // Convert interval to Polygon timespan
-  let timespan: "minute" | "hour" | "day" = "hour";
-  if (interval === "15m") timespan = "minute";
-  else if (interval === "1h") timespan = "hour";
-  else if (interval === "1d") timespan = "day";
-
-  // Convert range to days
-  let daysBack = 5;
-  if (range === "1d") daysBack = 1;
-  else if (range === "5d") daysBack = 5;
-  else if (range === "1mo") daysBack = 30;
+  const { timespan, daysBack } = toPolygonParams(interval, range);
 
   try {
-    const data = await fetchPolygonForexData(pair, timespan, daysBack);
-    return data;
+    return await fetchPolygonForexData(pair, timespan, daysBack);
   } catch (error) {
     console.error(`[Forex] Error fetching data for ${pair}:`, error);
     return null;
@@ -93,17 +98,7 @@ export async function fetchMultipleForexDataWrapper(
     return [];
   }
 
-  // Convert interval to Polygon timespan
-  let timespan: "minute" | "hour" | "day" = "hour";
-  if (interval === "15m") timespan = "minute";
-  else if (interval === "1h") timespan = "hour";
-  else if (interval === "1d") timespan = "day";
-
-  // Convert range to days
-  let daysBack = 5;
-  if (range === "1d") daysBack = 1;
-  else if (range === "5d") daysBack = 5;
-  else if (range === "1mo") daysBack = 30;
+  const { timespan, daysBack } = toPolygonParams(interval, range);
 
   try {
     const dataMap = await fetchMultipleForexData(pairs, timespan, daysBack);
@@ -141,16 +136,14 @@ export async function fetchForexDataForUser(
  * Check if a pair is available for a specific tier
  */
 export function isPairAvailableForTier(pair: string, tier: 'free' | 'premium' | 'pro'): boolean {
-  const availablePairs = getPairSymbolsForTier(tier);
-  return availablePairs.includes(pair);
+  return getPairSymbolsForTier(tier).includes(pair);
 }
 
 /**
  * Get pair category (major/minor/exotic)
  */
 export function getPairCategory(pair: string): 'major' | 'minor' | 'exotic' | null {
-  const allPairs = PRO_PAIRS;
-  const found = allPairs.find(p => p.symbol === pair);
+  const found = PRO_PAIRS.find(p => p.symbol === pair);
   return found ? found.category : null;
 }
 
@@ -161,8 +154,7 @@ export function filterPairsByCategory(
   tier: 'free' | 'premium' | 'pro',
   category: 'major' | 'minor' | 'exotic'
 ): CurrencyPair[] {
-  const pairs = getPairsForTier(tier);
-  return pairs.filter(p => p.category === category);
+  return getPairsForTier(tier).filter(p => p.category === category);
 }
 
 /**
@@ -172,10 +164,8 @@ export function searchPairs(
   query: string,
   tier: 'free' | 'premium' | 'pro' = 'pro'
 ): CurrencyPair[] {
-  const pairs = getPairsForTier(tier);
   const lowerQuery = query.toLowerCase();
-  
-  return pairs.filter(p => 
+  return getPairsForTier(tier).filter(p =>
     p.symbol.toLowerCase().includes(lowerQuery) ||
     p.name.toLowerCase().includes(lowerQuery)
   );

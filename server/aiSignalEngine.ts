@@ -133,8 +133,10 @@ export async function generateAISignal(pair: string): Promise<AIEnhancedSignal |
     }
 
     // Step 2: Fetch OHLC data for technical analysis
+    // Use 5-day range: Polygon Currencies Starter returns 95 real-time hourly candles
+    // (30-day range returned stale data on the Basic plan)
     const today = new Date();
-    const fromDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const fromDate = new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000);
     const from = fromDate.toISOString().split("T")[0];
     const to = today.toISOString().split("T")[0];
 
