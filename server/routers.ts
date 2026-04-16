@@ -16,6 +16,7 @@ import { createMagicLink, verifyMagicLink } from "./_core/magicLink";
 import { sendMagicLinkEmail } from "./_core/sendMagicLinkEmail";
 import jwt from "jsonwebtoken";
 import { ENV } from "./_core/env";
+import { sdk } from "./_core/sdk";
 import { aiRouter } from "./routers/aiRouter";
 import { referralRouter } from "./routers/referralRouter";
 import { generateAISignal, checkAndLearnFromResolvedSignals } from "./aiSignalEngine";
@@ -95,12 +96,13 @@ export const appRouter = router({
             .limit(1);
           
           if (existingUser) {
-            // Update existing user
+            // Update existing user - but preserve admin role and don't reset expiry for admins
+            const isAdmin = existingUser.role === 'admin';
             await db
               .update(users)
               .set({
-                subscriptionTier: result.tier,
-                subscriptionExpiry: expiry,
+                // Only update subscription if not an admin (admins have permanent access)
+                ...(isAdmin ? {} : { subscriptionTier: result.tier, subscriptionExpiry: expiry }),
                 lastSignedIn: new Date(),
               })
               .where(eq(users.id, existingUser.id));
@@ -124,13 +126,13 @@ export const appRouter = router({
             }
           }
           
-          // Create session JWT
-          const user = existingUser || { id: userId, email: result.email, name: result.email.split('@')[0], role: "user" };
-          const sessionToken = jwt.sign(
-            { userId: user.id, email: user.email, name: user.name, role: user.role },
-            ENV.cookieSecret,
-            { expiresIn: "30d" }
-          );
+          // Create session using sdk.createSessionToken so authenticateRequest can
+          // always fetch the latest role/subscription from the DB on every request
+          const finalUser = existingUser || { id: userId, email: result.email, name: result.email.split('@')[0], role: "user" };
+          const sessionToken = await sdk.createSessionToken(finalUser.id, {
+            name: finalUser.name || finalUser.email || undefined,
+            expiresInMs: 30 * 24 * 60 * 60 * 1000, // 30 days
+          });
           
           // Set session cookie
           const cookieOptions = getSessionCookieOptions(ctx.req);
@@ -139,9 +141,9 @@ export const appRouter = router({
           return { 
             success: true, 
             user: { 
-              id: user.id, 
-              email: user.email, 
-              name: user.name,
+              id: finalUser.id, 
+              email: finalUser.email, 
+              name: finalUser.name,
               tier: result.tier 
             } 
           };
