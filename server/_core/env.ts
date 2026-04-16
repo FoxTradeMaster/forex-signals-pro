@@ -9,6 +9,6 @@ export const ENV = {
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? process.env.OPENAI_API_KEY ?? "",
   sendgridApiKey: process.env.SENDGRID_API_KEY ?? "",
   fromEmail: process.env.FROM_EMAIL ?? "",
-  frontendUrl: process.env.FRONTEND_URL ?? "https://forex-signals-pro.onrender.com",
+  frontendUrl: process.env.FRONTEND_URL ?? "https://foxtrademaster.com",
   polygonApiKey: process.env.POLYGON_API_KEY ?? "",
 };

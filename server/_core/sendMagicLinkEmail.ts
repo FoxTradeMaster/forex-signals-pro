@@ -16,7 +16,7 @@ export async function sendMagicLinkEmail(
     return false;
   }
 
-  const magicLinkUrl = `${ENV.frontendUrl || "https://forex-signals-pro.onrender.com"}/auth/verify?token=${token}`;
+  const magicLinkUrl = `${ENV.frontendUrl || "https://foxtrademaster.com"}/auth/verify?token=${token}`;
   
   const tierName = tier === "premium" ? "Premium" : "Pro";
   const tierFeatures = tier === "premium" 
