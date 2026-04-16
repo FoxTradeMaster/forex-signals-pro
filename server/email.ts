@@ -932,3 +932,61 @@ The FOX TRADE MASTER Team`,
     return false;
   }
 }
+
+/**
+ * Send new payment notification to the owner (support@foxtrademaster.com)
+ */
+export async function sendNewPaymentNotification(params: {
+  userEmail: string;
+  userName: string;
+  plan: string;
+  amount: string;
+  orderId: string;
+  expiry: Date;
+}): Promise<boolean> {
+  if (!SENDGRID_API_KEY) {
+    console.warn('[Email] SendGrid not configured — skipping payment notification');
+    return false;
+  }
+  const { userEmail, userName, plan, amount, orderId, expiry } = params;
+  const planLabel = plan === 'monthly' ? 'Premium Monthly'
+    : plan === 'yearly' ? 'Premium Yearly'
+    : plan === 'pro_monthly' ? 'Pro Monthly'
+    : plan === 'pro_yearly' ? 'Pro Yearly'
+    : plan;
+  try {
+    const msg = {
+      to: 'support@foxtrademaster.com',
+      from: FROM_EMAIL,
+      subject: `💰 New Payment Received — ${planLabel} ($${amount})`,
+      text: `New payment received on FOX TRADE MASTER!\n\nCustomer: ${userName} (${userEmail})\nPlan: ${planLabel}\nAmount: $${amount}\nOrder ID: ${orderId}\nAccess expires: ${expiry.toLocaleDateString()}\n\nView admin panel: https://foxtrademaster.com/admin`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0f172a; color: #e2e8f0; padding: 32px; border-radius: 12px;">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <h1 style="color: #f97316; margin: 0;">💰 New Payment Received</h1>
+            <p style="color: #94a3b8; margin: 8px 0 0;">FOX TRADE MASTER</p>
+          </div>
+          <div style="background: #1e293b; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0; color: #94a3b8; width: 40%;">Customer</td><td style="padding: 8px 0; font-weight: bold;">${userName}</td></tr>
+              <tr><td style="padding: 8px 0; color: #94a3b8;">Email</td><td style="padding: 8px 0;">${userEmail}</td></tr>
+              <tr><td style="padding: 8px 0; color: #94a3b8;">Plan</td><td style="padding: 8px 0; color: #f97316; font-weight: bold;">${planLabel}</td></tr>
+              <tr><td style="padding: 8px 0; color: #94a3b8;">Amount</td><td style="padding: 8px 0; color: #22c55e; font-weight: bold; font-size: 20px;">$${amount}</td></tr>
+              <tr><td style="padding: 8px 0; color: #94a3b8;">Order ID</td><td style="padding: 8px 0; font-size: 12px; color: #64748b;">${orderId}</td></tr>
+              <tr><td style="padding: 8px 0; color: #94a3b8;">Access Until</td><td style="padding: 8px 0;">${expiry.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</td></tr>
+            </table>
+          </div>
+          <div style="text-align: center;">
+            <a href="https://foxtrademaster.com/admin" style="background: #f97316; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">View Admin Panel</a>
+          </div>
+        </div>
+      `,
+    };
+    await sgMail.send(msg);
+    console.log('[Email] Payment notification sent to owner for order ' + orderId);
+    return true;
+  } catch (error) {
+    console.error('[Email] Failed to send payment notification:', error);
+    return false;
+  }
+}

@@ -11,7 +11,7 @@ import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clear
 import { users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { createPayPalOrder, capturePayPalOrder } from "./paypal";
-import { sendWelcomeEmail } from "./email";
+import { sendWelcomeEmail, sendNewPaymentNotification } from "./email";
 import { createMagicLink, verifyMagicLink } from "./_core/magicLink";
 import { sendMagicLinkEmail } from "./_core/sendMagicLinkEmail";
 import jwt from "jsonwebtoken";
@@ -249,6 +249,16 @@ export const appRouter = router({
             input.plan
           ).catch(err => console.error('[Payment] Failed to send welcome email:', err));
         }
+
+        // Notify owner of new payment
+        sendNewPaymentNotification({
+          userEmail: ctx.user.email || 'unknown',
+          userName: ctx.user.name || 'Unknown User',
+          plan: input.plan,
+          amount: captureResult.amount || '0.00',
+          orderId: input.orderId,
+          expiry,
+        }).catch(err => console.error('[Payment] Failed to send owner notification:', err));
 
         return {
           success: true,
