@@ -18,6 +18,7 @@ import Analytics from "./pages/Analytics";
 import ShareSignal from "./pages/ShareSignal";
 import AIBrain from "./pages/AIBrain";
 import Referral from "./pages/Referral";
+import ColdStartScreen from "./components/ColdStartScreen";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -57,6 +58,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <PWAInstallPrompt />
+          <ColdStartScreen />
           <Router />
         </TooltipProvider>
       </ThemeProvider>

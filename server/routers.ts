@@ -828,9 +828,64 @@ export const appRouter = router({
         
         return { success: true, message: `${input.reportType} performance report sent to ${input.email}` };
       }),
-  }),
 
-  // Alert preferences and history
+    // Revoke access (set to free tier)
+    revokeAccess: protectedProcedure
+      .input(z.object({ userId: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUser(ctx.user.id);
+        if (!user || user.role !== "admin") throw new Error("Unauthorized: Admin access required");
+        await updateUserSubscription(input.userId, "free", null);
+        return { success: true, message: "Access revoked — user set to free tier" };
+      }),
+
+    // Extend subscription by N months
+    extendSubscription: protectedProcedure
+      .input(z.object({
+        userId: z.string(),
+        months: z.number().min(1).max(24),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const adminUser = await getUser(ctx.user.id);
+        if (!adminUser || adminUser.role !== "admin") throw new Error("Unauthorized: Admin access required");
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        const [targetUser] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+        if (!targetUser) throw new Error("User not found");
+        const base = targetUser.subscriptionExpiry && new Date(targetUser.subscriptionExpiry) > new Date()
+          ? new Date(targetUser.subscriptionExpiry)
+          : new Date();
+        base.setMonth(base.getMonth() + input.months);
+        await updateUserSubscription(input.userId, targetUser.subscriptionTier || "premium", base);
+        return { success: true, message: `Subscription extended by ${input.months} month(s)` };
+      }),
+
+    // Promote user to admin
+    makeAdmin: protectedProcedure
+      .input(z.object({ userId: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        const adminUser = await getUser(ctx.user.id);
+        if (!adminUser || adminUser.role !== "admin") throw new Error("Unauthorized: Admin access required");
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        await db.update(users).set({ role: "admin" }).where(eq(users.id, input.userId));
+        return { success: true, message: "User promoted to admin" };
+      }),
+
+    // Remove admin role
+    removeAdmin: protectedProcedure
+      .input(z.object({ userId: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        const adminUser = await getUser(ctx.user.id);
+        if (!adminUser || adminUser.role !== "admin") throw new Error("Unauthorized: Admin access required");
+        if (input.userId === ctx.user.id) throw new Error("Cannot remove your own admin role");
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        await db.update(users).set({ role: "user" }).where(eq(users.id, input.userId));
+        return { success: true, message: "Admin role removed" };
+      }),
+  }),
+  // Alert preferences and historyy
   alerts: router({
     // Get user's alert preferences
     getPreferences: protectedProcedure.query(async ({ ctx }) => {

@@ -8,45 +8,49 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
+import { Search, UserCheck, UserX, ShieldCheck, ShieldOff, Calendar, RefreshCw, DollarSign, Users, CreditCard, TrendingUp } from "lucide-react";
 
 export default function Admin() {
   const { user, loading } = useAuth();
   const [, setLocation] = useLocation();
+
   const [grantEmail, setGrantEmail] = useState("");
   const [grantTier, setGrantTier] = useState<"premium" | "pro">("premium");
   const [grantPlan, setGrantPlan] = useState<"monthly" | "yearly" | "pro_monthly" | "pro_yearly">("monthly");
+  const [userSearch, setUserSearch] = useState("");
+  const [paymentSearch, setPaymentSearch] = useState("");
+  const [extendDialog, setExtendDialog] = useState<{ open: boolean; userId: string; email: string; months: number }>({
+    open: false, userId: "", email: "", months: 1,
+  });
 
-  // Fetch data
   const { data: payments, isLoading: paymentsLoading, refetch: refetchPayments } = trpc.admin.getAllPayments.useQuery();
-  const { data: users, isLoading: usersLoading, refetch: refetchUsers } = trpc.admin.getAllUsers.useQuery();
+  const { data: usersData, isLoading: usersLoading, refetch: refetchUsers } = trpc.admin.getAllUsers.useQuery();
 
-  // Mutations
   const grantAccessMutation = trpc.admin.grantAccess.useMutation({
-    onSuccess: (data) => {
-      toast.success(data.message);
-      setGrantEmail("");
-      refetchUsers();
-      refetchPayments();
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
+    onSuccess: (data) => { toast.success(data.message); setGrantEmail(""); refetchUsers(); refetchPayments(); },
+    onError: (error) => toast.error(error.message),
+  });
+  const revokeAccessMutation = trpc.admin.revokeAccess.useMutation({
+    onSuccess: (data) => { toast.success(data.message); refetchUsers(); },
+    onError: (error) => toast.error(error.message),
+  });
+  const extendSubscriptionMutation = trpc.admin.extendSubscription.useMutation({
+    onSuccess: (data) => { toast.success(data.message); setExtendDialog(d => ({ ...d, open: false })); refetchUsers(); },
+    onError: (error) => toast.error(error.message),
+  });
+  const makeAdminMutation = trpc.admin.makeAdmin.useMutation({
+    onSuccess: (data) => { toast.success(data.message); refetchUsers(); },
+    onError: (error) => toast.error(error.message),
+  });
+  const removeAdminMutation = trpc.admin.removeAdmin.useMutation({
+    onSuccess: (data) => { toast.success(data.message); refetchUsers(); },
+    onError: (error) => toast.error(error.message),
   });
 
-  const updateSubscriptionMutation = trpc.admin.updateSubscription.useMutation({
-    onSuccess: (data) => {
-      toast.success(data.message);
-      refetchUsers();
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
-  });
-
-  // Check if user is admin
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -58,134 +62,240 @@ export default function Admin() {
     );
   }
 
-  if (!user) {
+  if (!user || user.role !== "admin") {
     setLocation("/");
     return null;
   }
 
-  // Handle grant access
-  const handleGrantAccess = () => {
-    if (!grantEmail) {
-      toast.error("Please enter an email address");
-      return;
-    }
-    grantAccessMutation.mutate({
-      email: grantEmail,
-      tier: grantTier,
-      plan: grantPlan,
-    });
-  };
-
-  // Format date
-  const formatDate = (date: Date | string | null) => {
+  const formatDate = (date: Date | string | null | undefined) => {
     if (!date) return "N/A";
-    return new Date(date).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
   };
 
-  // Get tier badge color
-  const getTierBadge = (tier: string) => {
+  const isExpired = (date: Date | string | null | undefined) =>
+    !!date && new Date(date) < new Date();
+
+  const getTierBadge = (tier: string | null | undefined) => {
     switch (tier) {
-      case "pro":
-        return <Badge className="bg-purple-500">PRO</Badge>;
-      case "premium":
-        return <Badge className="bg-blue-500">PREMIUM</Badge>;
-      default:
-        return <Badge variant="outline">FREE</Badge>;
+      case "pro": return <Badge className="bg-purple-600 text-white">PRO</Badge>;
+      case "premium": return <Badge className="bg-blue-600 text-white">PREMIUM</Badge>;
+      default: return <Badge variant="outline" className="text-gray-500">FREE</Badge>;
     }
   };
 
-  // Get status badge
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "completed":
-        return <Badge className="bg-green-500">COMPLETED</Badge>;
-      case "pending":
-        return <Badge className="bg-yellow-500">PENDING</Badge>;
-      case "refunded":
-        return <Badge className="bg-red-500">REFUNDED</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+      case "completed": return <Badge className="bg-green-600 text-white">COMPLETED</Badge>;
+      case "pending": return <Badge className="bg-yellow-500 text-white">PENDING</Badge>;
+      case "refunded": return <Badge className="bg-red-500 text-white">REFUNDED</Badge>;
+      default: return <Badge variant="outline">{status}</Badge>;
     }
   };
 
+  const filteredUsers = (usersData || []).filter(u =>
+    !userSearch || u.email?.toLowerCase().includes(userSearch.toLowerCase()) || u.name?.toLowerCase().includes(userSearch.toLowerCase())
+  );
+  const filteredPayments = (payments || []).filter(p =>
+    !paymentSearch || p.email?.toLowerCase().includes(paymentSearch.toLowerCase()) || p.paypalPaymentId?.toLowerCase().includes(paymentSearch.toLowerCase())
+  );
+
+  const totalRevenue = (payments || []).filter(p => p.status === "completed").reduce((sum, p) => sum + parseFloat(p.amount || "0"), 0);
+  const premiumUsers = (usersData || []).filter(u => u.subscriptionTier === "premium").length;
+  const proUsers = (usersData || []).filter(u => u.subscriptionTier === "pro").length;
+  const activeUsers = (usersData || []).filter(u =>
+    u.subscriptionTier && u.subscriptionTier !== "free" && (!u.subscriptionExpiry || !isExpired(u.subscriptionExpiry))
+  ).length;
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-              <p className="text-gray-600 mt-1">Manage payments, users, and subscriptions</p>
-            </div>
-            <Button variant="outline" onClick={() => setLocation("/")}>
-              Back to Dashboard
-            </Button>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b shadow-sm px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">🦊 Admin Dashboard</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Fox Trade Master — Subscription Management</p>
           </div>
+          <Button variant="outline" onClick={() => setLocation("/")}>← Back to Dashboard</Button>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="pt-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg"><DollarSign className="h-5 w-5 text-green-600" /></div>
+                <div>
+                  <p className="text-xs text-gray-500">Total Revenue</p>
+                  <p className="text-xl font-bold text-gray-900">${totalRevenue.toFixed(2)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg"><Users className="h-5 w-5 text-blue-600" /></div>
+                <div>
+                  <p className="text-xs text-gray-500">Total Users</p>
+                  <p className="text-xl font-bold text-gray-900">{(usersData || []).length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 rounded-lg"><TrendingUp className="h-5 w-5 text-orange-600" /></div>
+                <div>
+                  <p className="text-xs text-gray-500">Active Paid</p>
+                  <p className="text-xl font-bold text-gray-900">{activeUsers}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg"><CreditCard className="h-5 w-5 text-purple-600" /></div>
+                <div>
+                  <p className="text-xs text-gray-500">Premium / Pro</p>
+                  <p className="text-xl font-bold text-gray-900">{premiumUsers} / {proUsers}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        <Tabs defaultValue="payments" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="payments">Payments</TabsTrigger>
+        <Tabs defaultValue="users" className="space-y-4">
+          <TabsList className="grid grid-cols-3 w-full max-w-md">
             <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="payments">Payments</TabsTrigger>
             <TabsTrigger value="grant">Grant Access</TabsTrigger>
           </TabsList>
 
-          {/* Payments Tab */}
-          <TabsContent value="payments">
+          {/* Users Tab */}
+          <TabsContent value="users">
             <Card>
               <CardHeader>
-                <CardTitle>Payment Records</CardTitle>
-                <CardDescription>
-                  All PayPal payments received via webhook
-                </CardDescription>
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div>
+                    <CardTitle>Manage Users & Subscriptions</CardTitle>
+                    <CardDescription>Extend, revoke, or change subscription tiers for any user</CardDescription>
+                  </div>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search by email or name..."
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      className="pl-9 w-64"
+                    />
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                {paymentsLoading ? (
-                  <div className="text-center py-8">Loading payments...</div>
-                ) : !payments || payments.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">No payments yet</div>
+                {usersLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <RefreshCw className="h-6 w-6 animate-spin text-orange-500" />
+                  </div>
+                ) : filteredUsers.length === 0 ? (
+                  <p className="text-center text-gray-500 py-8">No users found</p>
                 ) : (
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Plan</TableHead>
+                          <TableHead>User</TableHead>
                           <TableHead>Tier</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>User Linked</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>PayPal ID</TableHead>
+                          <TableHead>Expiry</TableHead>
+                          <TableHead>Role</TableHead>
+                          <TableHead>Joined</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {payments.map((payment) => (
-                          <TableRow key={payment.id}>
-                            <TableCell className="font-medium">{payment.email}</TableCell>
-                            <TableCell>${payment.amount} {payment.currency}</TableCell>
-                            <TableCell>{payment.plan}</TableCell>
-                            <TableCell>{getTierBadge(payment.tier)}</TableCell>
-                            <TableCell>{getStatusBadge(payment.status)}</TableCell>
+                        {filteredUsers.map((u) => (
+                          <TableRow key={u.id} className={u.id === user.id ? "bg-orange-50" : ""}>
                             <TableCell>
-                              {payment.userId ? (
-                                <Badge className="bg-green-500">✓ Linked</Badge>
+                              <div>
+                                <p className="font-medium text-sm">{u.name || "—"}</p>
+                                <p className="text-xs text-gray-500">{u.email}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell>{getTierBadge(u.subscriptionTier)}</TableCell>
+                            <TableCell>
+                              {u.role === "admin" ? (
+                                <span className="text-xs text-purple-600 font-semibold">∞ Permanent</span>
+                              ) : u.subscriptionExpiry ? (
+                                <span className={isExpired(u.subscriptionExpiry) ? "text-red-500 text-xs font-semibold" : "text-green-600 text-xs"}>
+                                  {isExpired(u.subscriptionExpiry) ? "⚠ " : "✓ "}{formatDate(u.subscriptionExpiry)}
+                                </span>
                               ) : (
-                                <Badge variant="outline">Not Linked</Badge>
+                                <span className="text-gray-400 text-xs">No expiry</span>
                               )}
                             </TableCell>
-                            <TableCell className="text-sm text-gray-500">
-                              {formatDate(payment.createdAt)}
+                            <TableCell>
+                              {u.role === "admin"
+                                ? <Badge className="bg-red-600 text-white text-xs">ADMIN</Badge>
+                                : <Badge variant="outline" className="text-xs">USER</Badge>}
                             </TableCell>
-                            <TableCell className="text-xs text-gray-400 font-mono">
-                              {payment.paypalPaymentId.substring(0, 12)}...
+                            <TableCell className="text-xs text-gray-500">{formatDate(u.createdAt)}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center justify-end gap-1 flex-wrap">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
+                                  onClick={() => setExtendDialog({ open: true, userId: u.id, email: u.email || "", months: 1 })}
+                                >
+                                  <Calendar className="h-3 w-3 mr-1" /> Extend
+                                </Button>
+                                {u.subscriptionTier && u.subscriptionTier !== "free" && u.id !== user.id && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 text-xs border-red-300 text-red-600 hover:bg-red-50"
+                                    onClick={() => {
+                                      if (confirm(`Revoke access for ${u.email}? They will be set to free tier.`)) {
+                                        revokeAccessMutation.mutate({ userId: u.id });
+                                      }
+                                    }}
+                                  >
+                                    <UserX className="h-3 w-3 mr-1" /> Revoke
+                                  </Button>
+                                )}
+                                {u.id !== user.id && (
+                                  u.role === "admin" ? (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 text-xs border-gray-300 text-gray-600 hover:bg-gray-50"
+                                      onClick={() => {
+                                        if (confirm(`Remove admin role from ${u.email}?`)) {
+                                          removeAdminMutation.mutate({ userId: u.id });
+                                        }
+                                      }}
+                                    >
+                                      <ShieldOff className="h-3 w-3 mr-1" /> Demote
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 text-xs border-purple-300 text-purple-600 hover:bg-purple-50"
+                                      onClick={() => {
+                                        if (confirm(`Promote ${u.email} to admin?`)) {
+                                          makeAdminMutation.mutate({ userId: u.id });
+                                        }
+                                      }}
+                                    >
+                                      <ShieldCheck className="h-3 w-3 mr-1" /> Admin
+                                    </Button>
+                                  )
+                                )}
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -197,66 +307,63 @@ export default function Admin() {
             </Card>
           </TabsContent>
 
-          {/* Users Tab */}
-          <TabsContent value="users">
+          {/* Payments Tab */}
+          <TabsContent value="payments">
             <Card>
               <CardHeader>
-                <CardTitle>User Accounts</CardTitle>
-                <CardDescription>
-                  All registered users and their subscription status
-                </CardDescription>
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div>
+                    <CardTitle>PayPal Payment Records</CardTitle>
+                    <CardDescription>All payments received via PayPal webhook</CardDescription>
+                  </div>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search by email or order ID..."
+                      value={paymentSearch}
+                      onChange={(e) => setPaymentSearch(e.target.value)}
+                      className="pl-9 w-64"
+                    />
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                {usersLoading ? (
-                  <div className="text-center py-8">Loading users...</div>
-                ) : !users || users.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">No users yet</div>
+                {paymentsLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <RefreshCw className="h-6 w-6 animate-spin text-orange-500" />
+                  </div>
+                ) : filteredPayments.length === 0 ? (
+                  <div className="text-center py-12">
+                    <CreditCard className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">No payment records found</p>
+                    <p className="text-xs text-gray-400 mt-1">Payments appear here after PayPal webhook delivery</p>
+                  </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Email</TableHead>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Tier</TableHead>
-                          <TableHead>Expiry</TableHead>
-                          <TableHead>Role</TableHead>
-                          <TableHead>Login Method</TableHead>
-                          <TableHead>Created</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Plan</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>PayPal Order ID</TableHead>
+                          <TableHead>Date</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {users.map((user) => (
-                          <TableRow key={user.id}>
-                            <TableCell className="font-medium">{user.email || "N/A"}</TableCell>
-                            <TableCell>{user.name || "N/A"}</TableCell>
-                            <TableCell>{getTierBadge(user.subscriptionTier)}</TableCell>
-                            <TableCell className="text-sm">
-                              {user.subscriptionExpiry ? (
-                                <span className={
-                                  new Date(user.subscriptionExpiry) < new Date() 
-                                    ? "text-red-500 font-semibold" 
-                                    : "text-green-600"
-                                }>
-                                  {formatDate(user.subscriptionExpiry)}
-                                </span>
-                              ) : (
-                                <span className="text-gray-400">No expiry</span>
-                              )}
-                            </TableCell>
+                        {filteredPayments.map((p) => (
+                          <TableRow key={p.id}>
+                            <TableCell className="text-sm font-medium">{p.email || "—"}</TableCell>
+                            <TableCell className="font-semibold text-green-700">${p.amount} {p.currency}</TableCell>
                             <TableCell>
-                              {user.role === "admin" ? (
-                                <Badge className="bg-red-500">ADMIN</Badge>
-                              ) : (
-                                <Badge variant="outline">USER</Badge>
-                              )}
+                              <Badge variant="outline" className="text-xs capitalize">{p.plan?.replace(/_/g, " ") || "—"}</Badge>
                             </TableCell>
-                            <TableCell className="text-sm text-gray-500">
-                              {user.loginMethod || "N/A"}
+                            <TableCell>{getStatusBadge(p.status)}</TableCell>
+                            <TableCell className="text-xs text-gray-500 font-mono">
+                              {(p.paypalPaymentId || "").slice(0, 16)}...
                             </TableCell>
-                            <TableCell className="text-sm text-gray-500">
-                              {formatDate(user.createdAt)}
-                            </TableCell>
+                            <TableCell className="text-xs text-gray-500">{formatDate(p.createdAt)}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -269,80 +376,104 @@ export default function Admin() {
 
           {/* Grant Access Tab */}
           <TabsContent value="grant">
-            <Card>
+            <Card className="max-w-xl">
               <CardHeader>
-                <CardTitle>Manually Grant Access</CardTitle>
-                <CardDescription>
-                  Grant premium or pro access to users who paid but didn't complete activation
-                </CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <UserCheck className="h-5 w-5 text-green-600" /> Manually Grant Access
+                </CardTitle>
+                <CardDescription>Activate a subscription for a user who paid but didn't complete the magic link flow</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">User Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="user@example.com"
-                      value={grantEmail}
-                      onChange={(e) => setGrantEmail(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="tier">Subscription Tier</Label>
-                      <Select value={grantTier} onValueChange={(v) => setGrantTier(v as "premium" | "pro")}>
-                        <SelectTrigger id="tier">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="premium">Premium (10 pairs)</SelectItem>
-                          <SelectItem value="pro">Pro (156 pairs)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="plan">Billing Plan</Label>
-                      <Select value={grantPlan} onValueChange={(v) => setGrantPlan(v as any)}>
-                        <SelectTrigger id="plan">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="monthly">Monthly</SelectItem>
-                          <SelectItem value="yearly">Yearly</SelectItem>
-                          <SelectItem value="pro_monthly">Pro Monthly</SelectItem>
-                          <SelectItem value="pro_yearly">Pro Yearly</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <Button 
-                    onClick={handleGrantAccess}
-                    disabled={grantAccessMutation.isPending}
-                    className="w-full"
-                  >
-                    {grantAccessMutation.isPending ? "Granting Access..." : "Grant Access"}
-                  </Button>
+              <CardContent className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="grant-email">User Email</Label>
+                  <Input id="grant-email" type="email" placeholder="user@example.com" value={grantEmail} onChange={(e) => setGrantEmail(e.target.value)} />
                 </div>
-
-                <div className="border-t pt-6">
-                  <h3 className="font-semibold mb-2">Instructions:</h3>
-                  <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                    <li>Enter the email address of the user who paid</li>
-                    <li>Select the appropriate tier and billing plan</li>
-                    <li>Click "Grant Access" to activate their subscription</li>
-                    <li>If the user doesn't exist, a new account will be created</li>
-                    <li>The user will be able to log in via magic link</li>
-                  </ul>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Subscription Tier</Label>
+                    <Select value={grantTier} onValueChange={(v) => setGrantTier(v as "premium" | "pro")}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="premium">Premium (10 pairs)</SelectItem>
+                        <SelectItem value="pro">Pro (156 pairs)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Billing Plan</Label>
+                    <Select value={grantPlan} onValueChange={(v) => setGrantPlan(v as any)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                        <SelectItem value="pro_monthly">Pro Monthly</SelectItem>
+                        <SelectItem value="pro_yearly">Pro Yearly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => {
+                    if (!grantEmail) { toast.error("Please enter an email address"); return; }
+                    grantAccessMutation.mutate({ email: grantEmail, tier: grantTier, plan: grantPlan });
+                  }}
+                  disabled={grantAccessMutation.isPending}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  {grantAccessMutation.isPending ? "Granting Access..." : "Grant Access"}
+                </Button>
+                <div className="bg-blue-50 rounded-lg p-4 text-sm text-blue-800 space-y-1">
+                  <p className="font-semibold">How it works:</p>
+                  <p>• Enter the email of the user who paid via PayPal</p>
+                  <p>• Select their tier and billing plan</p>
+                  <p>• Click Grant Access — their account will be activated immediately</p>
+                  <p>• If no account exists, a new one is created automatically</p>
+                  <p>• The user can then log in via the magic link email flow</p>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Extend Subscription Dialog */}
+      <Dialog open={extendDialog.open} onOpenChange={(open) => setExtendDialog(d => ({ ...d, open }))}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Extend Subscription</DialogTitle>
+            <DialogDescription>
+              Extend subscription for <strong>{extendDialog.email}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Number of months to extend</Label>
+              <Select
+                value={String(extendDialog.months)}
+                onValueChange={(v) => setExtendDialog(d => ({ ...d, months: parseInt(v) }))}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 6, 12, 24].map(m => (
+                    <SelectItem key={m} value={String(m)}>{m} month{m > 1 ? "s" : ""}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500">Extension is added from the current expiry (or today if already expired).</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExtendDialog(d => ({ ...d, open: false }))}>Cancel</Button>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              disabled={extendSubscriptionMutation.isPending}
+              onClick={() => extendSubscriptionMutation.mutate({ userId: extendDialog.userId, months: extendDialog.months })}
+            >
+              {extendSubscriptionMutation.isPending ? "Extending..." : `Extend ${extendDialog.months} Month${extendDialog.months > 1 ? "s" : ""}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

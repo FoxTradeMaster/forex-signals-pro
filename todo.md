@@ -704,3 +704,8 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Added SSL support to drizzle.config.ts for Render's PostgreSQL connection
 - [x] Render auto-deploys from GitHub pushes via render.yaml (no Actions workflow needed)
 - [x] Push to GitHub - commit a160610 (Render will auto-deploy, pnpm db:push will create tables)
+
+## Phase 70: New Features (Apr 16, 2026)
+- [ ] Enable AI signals on Render via BUILT_IN_FORGE_API_KEY secret
+- [ ] Build Manage Subscriptions admin panel (view users, extend/revoke, PayPal history)
+- [ ] Add cold-start loading screen for Render server wake-up delay
