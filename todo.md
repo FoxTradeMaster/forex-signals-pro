@@ -709,3 +709,8 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [ ] Enable AI signals on Render via BUILT_IN_FORGE_API_KEY secret
 - [ ] Build Manage Subscriptions admin panel (view users, extend/revoke, PayPal history)
 - [ ] Add cold-start loading screen for Render server wake-up delay
+
+## Phase 71: New Features (Apr 16, 2026) - COMPLETE ✅
+- [x] Refer-a-Friend reward backend: grantReferralReward() in db.ts — auto-grants 1 free month to referrer when referred user converts to paid plan (hooked into capturePayment in routers.ts)
+- [x] Signal performance auto-tracking: server/cron/trackSignalOutcomes.ts — runs every 30 min, fetches live prices, detects TP/SL hits, deactivates resolved signals, triggers AI Brain learning; registered in render.yaml
+- [x] Welcome email for free-tier sign-ups: sendFreeWelcomeEmail() in email.ts — fires on new OAuth login (oauth.ts) and on requestFreeSignup endpoint (routers.ts); premium/pro magic link users get sendWelcomeEmail() on first activation

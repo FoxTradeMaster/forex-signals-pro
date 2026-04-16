@@ -7,11 +7,11 @@ import { fetchForexData, fetchAllForexData, fetchForexDataForUser, getPairSymbol
 import { getPairMarketStatus, isForexMarketOpen, getCurrentSessionName, formatTimeUntilOpen } from "./marketHours";
 import { SignalEngine } from "./signalEngine";
 import { MomentumWindowAnalyzer } from "./momentumWindow";
-import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist, getDb, getUser, getPaymentByEmail, linkPaymentToUser, getAllPayments, getAllUsers, updateUserSubscription, upsertSignalPerformance, getSignalPerformance, getHistoricalPerformance, getWinRateByPair, getPerformanceByTimeframe, getStrategyPerformance, getDailyPLTrend, createSharedSignal, getSharedSignal, getUserSharedSignals, getSignalStats } from "./db";
+import { saveSignal, getActiveSignals, getSignalsByPair, deactivateSignal, clearAllSignals, addToWatchlist, removeFromWatchlist, getUserWatchlist, getDb, getUser, getPaymentByEmail, linkPaymentToUser, getAllPayments, getAllUsers, updateUserSubscription, upsertSignalPerformance, getSignalPerformance, getHistoricalPerformance, getWinRateByPair, getPerformanceByTimeframe, getStrategyPerformance, getDailyPLTrend, createSharedSignal, getSharedSignal, getUserSharedSignals, getSignalStats, grantReferralReward } from "./db";
 import { users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { createPayPalOrder, capturePayPalOrder } from "./paypal";
-import { sendWelcomeEmail, sendNewPaymentNotification } from "./email";
+import { sendWelcomeEmail, sendNewPaymentNotification, sendFreeWelcomeEmail } from "./email";
 import { createMagicLink, verifyMagicLink } from "./_core/magicLink";
 import { sendMagicLinkEmail } from "./_core/sendMagicLinkEmail";
 import jwt from "jsonwebtoken";
@@ -41,6 +41,54 @@ export const appRouter = router({
       } as const;
     }),
     
+    // Request free account (email sign-up for free tier)
+    requestFreeSignup: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        referralCode: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const db = await getDb();
+          if (!db) throw new Error('Database not available');
+
+          // Check if user already exists
+          const [existingUser] = await db
+            .select()
+            .from(users)
+            .where(eq(users.email, input.email))
+            .limit(1);
+
+          if (!existingUser) {
+            // Create new free-tier user
+            const userId = `user_${Date.now()}_${input.email.split('@')[0]}`;
+            await db.insert(users).values({
+              id: userId,
+              email: input.email,
+              name: input.email.split('@')[0],
+              loginMethod: 'email_free',
+              subscriptionTier: 'free',
+              role: 'user',
+            });
+
+            // Track referral if code provided
+            if (input.referralCode) {
+              const { trackReferral } = await import('./db');
+              await trackReferral(input.referralCode, userId).catch(() => {});
+            }
+
+            // Send welcome email (non-blocking)
+            sendFreeWelcomeEmail(input.email, input.email.split('@')[0])
+              .catch(err => console.error('[Free Signup] Failed to send welcome email:', err));
+          }
+
+          return { success: true, message: 'Free account ready — check your email for a welcome message!' };
+        } catch (error) {
+          console.error('[Free Signup] Error:', error);
+          throw new Error('Failed to create free account');
+        }
+      }),
+
     // Request magic link (after PayPal payment)
     requestMagicLink: publicProcedure
       .input(z.object({
@@ -124,6 +172,13 @@ export const appRouter = router({
               await linkPaymentToUser(payment.id, userId);
               console.log(`[Magic Link] Linked payment ${payment.id} to user ${userId}`);
             }
+
+            // Send welcome email for new premium/pro users
+            sendWelcomeEmail(
+              result.email,
+              result.email.split('@')[0],
+              result.tier === 'pro' ? 'pro_monthly' : 'monthly'
+            ).catch(err => console.error('[Magic Link] Failed to send welcome email:', err));
           }
           
           // Create session using sdk.createSessionToken so authenticateRequest can
@@ -248,6 +303,19 @@ export const appRouter = router({
             ctx.user.name || 'Trader',
             input.plan
           ).catch(err => console.error('[Payment] Failed to send welcome email:', err));
+        }
+
+        // Grant 1 free month to referrer if this user was referred
+        try {
+          const paidUser = await getUser(ctx.user.id);
+          if (paidUser?.referredBy) {
+            const rewarded = await grantReferralReward(paidUser.referredBy);
+            if (rewarded) {
+              console.log(`[Referral] Rewarded referrer ${paidUser.referredBy} for conversion of ${ctx.user.id}`);
+            }
+          }
+        } catch (refErr) {
+          console.error('[Referral] Failed to process referral reward (non-fatal):', refErr);
         }
 
         // Notify owner of new payment

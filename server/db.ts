@@ -1477,3 +1477,44 @@ export async function getSignalStats(): Promise<{
     return { activeCount: 0, lastGeneratedAt: null, streakDays: 0 };
   }
 }
+
+// ── Referral Reward ────────────────────────────────────────────────────────────
+/**
+ * Grant 1 free month to a referrer when their referred user converts to a paid plan.
+ * Safe to call multiple times — idempotent if referrer already has active subscription.
+ */
+export async function grantReferralReward(referrerId: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  try {
+    const [referrer] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, referrerId))
+      .limit(1);
+
+    if (!referrer) return false;
+
+    // Extend subscription by 1 month from today (or from current expiry if still active)
+    const base = referrer.subscriptionExpiry && new Date(referrer.subscriptionExpiry) > new Date()
+      ? new Date(referrer.subscriptionExpiry)
+      : new Date();
+    const newExpiry = new Date(base);
+    newExpiry.setMonth(newExpiry.getMonth() + 1);
+
+    // If referrer is on free tier, upgrade to premium for 1 month
+    const newTier = referrer.subscriptionTier === 'free' ? 'premium' : referrer.subscriptionTier;
+
+    await db
+      .update(users)
+      .set({ subscriptionTier: newTier, subscriptionExpiry: newExpiry })
+      .where(eq(users.id, referrerId));
+
+    console.log(`[Referral] Granted 1 free month to referrer ${referrerId} (expires ${newExpiry.toISOString()})`);
+    return true;
+  } catch (error) {
+    console.error('[Referral] Failed to grant reward:', error);
+    return false;
+  }
+}

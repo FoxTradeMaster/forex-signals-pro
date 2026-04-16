@@ -91,7 +91,7 @@ export default function Referral() {
             <div>
               <h2 className="text-2xl font-bold mb-1">Invite Friends, Grow Together</h2>
               <p className="text-orange-100 text-sm">
-                Share your unique referral link. Every friend who joins gets a 7-day free trial of Premium — and you build your trading community.
+                Share your unique referral link. Every friend who joins gets a 7-day free trial of Premium — and when they upgrade to a paid plan, <strong className="text-white">you earn 1 free month automatically</strong>.
               </p>
             </div>
           </div>
@@ -241,7 +241,8 @@ export default function Referral() {
               {[
                 { step: "1", icon: "🔗", title: "Share Your Link", desc: "Copy your referral link and share it with fellow traders." },
                 { step: "2", icon: "✉️", title: "Friend Signs Up", desc: "They click your link and get a 7-day free trial of Premium." },
-                { step: "3", icon: "📊", title: "Track Your Referrals", desc: "See how many friends you've referred right here on this page." },
+                { step: "3", icon: "💳", title: "Friend Upgrades", desc: "When your referred friend converts to any paid plan, you automatically receive 1 free month of your current subscription." },
+                { step: "4", icon: "📊", title: "Track Your Referrals", desc: "See how many friends you've referred right here on this page." },
               ].map((item) => (
                 <div key={item.step} className="flex items-start gap-4">
                   <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-sm shrink-0">

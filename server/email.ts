@@ -990,3 +990,115 @@ export async function sendNewPaymentNotification(params: {
     return false;
   }
 }
+
+/**
+ * Send welcome email to new free-tier sign-ups with upgrade CTA
+ */
+export async function sendFreeWelcomeEmail(
+  toEmail: string,
+  userName: string
+): Promise<boolean> {
+  if (!SENDGRID_API_KEY) {
+    console.warn('[Email] SendGrid API key not configured, skipping free welcome email');
+    return false;
+  }
+
+  const upgradeUrl = `${process.env.FRONTEND_URL || 'https://foxtrademaster.com'}/premium`;
+
+  const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f8fafc; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    .header { background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); padding: 36px 32px; text-align: center; }
+    .header h1 { color: #ffffff; margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.5px; }
+    .header p { color: rgba(255,255,255,0.85); margin: 8px 0 0; font-size: 14px; }
+    .body { padding: 32px; }
+    .greeting { font-size: 18px; font-weight: 700; color: #1e293b; margin-bottom: 12px; }
+    .text { color: #475569; font-size: 15px; line-height: 1.6; margin-bottom: 20px; }
+    .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 24px 0; }
+    .feature-item { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 14px 16px; }
+    .feature-item .icon { font-size: 20px; margin-bottom: 6px; }
+    .feature-item .title { font-weight: 700; color: #c2410c; font-size: 13px; }
+    .feature-item .desc { color: #78350f; font-size: 12px; margin-top: 2px; }
+    .cta-section { background: linear-gradient(135deg, #fef3c7 0%, #fff7ed 100%); border: 1px solid #fde68a; border-radius: 10px; padding: 24px; text-align: center; margin: 24px 0; }
+    .cta-section h3 { color: #92400e; font-size: 16px; font-weight: 700; margin: 0 0 8px; }
+    .cta-section p { color: #78350f; font-size: 13px; margin: 0 0 16px; }
+    .cta-btn { display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 15px; }
+    .footer { background: #f8fafc; padding: 20px 32px; text-align: center; border-top: 1px solid #e2e8f0; }
+    .footer p { color: #94a3b8; font-size: 12px; margin: 4px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div style="font-size:40px;margin-bottom:8px;">🦊</div>
+      <h1>FOX TRADE MASTER™</h1>
+      <p>Welcome to AI-Powered Forex Trading Signals</p>
+    </div>
+    <div class="body">
+      <div class="greeting">Welcome aboard, ${userName}! 🎉</div>
+      <p class="text">
+        You now have access to <strong>FOX TRADE MASTER™ Free</strong> — your gateway to professional-grade forex trading signals powered by AI.
+      </p>
+
+      <div class="feature-grid">
+        <div class="feature-item">
+          <div class="icon">📊</div>
+          <div class="title">EUR/USD Signals</div>
+          <div class="desc">Live AI-powered signals on the world's most traded pair</div>
+        </div>
+        <div class="feature-item">
+          <div class="icon">🧠</div>
+          <div class="title">AI Brain</div>
+          <div class="desc">See the AI's reasoning behind every signal</div>
+        </div>
+        <div class="feature-item">
+          <div class="icon">📈</div>
+          <div class="title">Signal History</div>
+          <div class="desc">Track past performance and win rates</div>
+        </div>
+        <div class="feature-item">
+          <div class="icon">🎯</div>
+          <div class="title">Entry & Exit Levels</div>
+          <div class="desc">Precise entry price, stop loss, and take profit</div>
+        </div>
+      </div>
+
+      <div class="cta-section">
+        <h3>🚀 Unlock 10–156 Currency Pairs</h3>
+        <p>Upgrade to Premium or Pro to access more pairs, real-time alerts, trade journal, analytics, and full AI signal reasoning.</p>
+        <a href="${upgradeUrl}" class="cta-btn">Upgrade Now — From $99.95/mo</a>
+      </div>
+
+      <p class="text" style="font-size:13px;color:#94a3b8;">
+        Questions? Reply to this email or visit <a href="https://foxtrademaster.com" style="color:#f97316;">foxtrademaster.com</a>. Happy trading!
+      </p>
+    </div>
+    <div class="footer">
+      <p>© ${new Date().getFullYear()} FOX TRADE MASTER™. All rights reserved.</p>
+      <p>You received this email because you signed up for a free account.</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  try {
+    const msg = {
+      to: toEmail,
+      from: { email: FROM_EMAIL, name: 'FOX TRADE MASTER™' },
+      subject: '🦊 Welcome to FOX TRADE MASTER™ — Your Free Account is Ready',
+      text: `Welcome to FOX TRADE MASTER™, ${userName}! Your free account is now active. Visit ${upgradeUrl} to upgrade for more pairs and features.`,
+      html: emailHtml,
+    };
+    await sgMail.send(msg);
+    console.log('[Email] Free welcome email sent to', toEmail);
+    return true;
+  } catch (error) {
+    console.error('[Email] Failed to send free welcome email:', error);
+    return false;
+  }
+}

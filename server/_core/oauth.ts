@@ -3,6 +3,7 @@ import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
+import { sendFreeWelcomeEmail } from "../email";
 
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
@@ -28,6 +29,10 @@ export function registerOAuthRoutes(app: Express) {
         return;
       }
 
+      // Check if this is a brand-new user (first login)
+      const existingUser = await db.getUser(userInfo.openId);
+      const isNewUser = !existingUser;
+
       await db.upsertUser({
         id: userInfo.openId,
         name: userInfo.name || null,
@@ -35,6 +40,12 @@ export function registerOAuthRoutes(app: Express) {
         loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
         lastSignedIn: new Date(),
       });
+
+      // Send free-tier welcome email for brand-new users
+      if (isNewUser && userInfo.email) {
+        sendFreeWelcomeEmail(userInfo.email, userInfo.name || userInfo.email.split('@')[0])
+          .catch(err => console.error('[OAuth] Failed to send free welcome email:', err));
+      }
 
       const sessionToken = await sdk.createSessionToken(userInfo.openId, {
         name: userInfo.name || "",
