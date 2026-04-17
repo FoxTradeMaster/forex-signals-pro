@@ -487,6 +487,9 @@ export default function Admin() {
 /** Standalone sub-component for the Email Preview tab */
 function EmailPreviewTab() {
   const [lastSent, setLastSent] = useState<Record<string, string>>({});
+  const [previewType, setPreviewType] = useState<"welcome_free" | "welcome_premium" | "referral_reward">("welcome_free");
+  const [showPreview, setShowPreview] = useState(false);
+
   const sendTestEmail = trpc.admin.sendTestEmail.useMutation({
     onSuccess: (data, variables) => {
       toast.success(data.message);
@@ -494,6 +497,11 @@ function EmailPreviewTab() {
     },
     onError: (err) => toast.error(err.message),
   });
+
+  const { data: previewData, isLoading: previewLoading, refetch: refetchPreview } = trpc.admin.getEmailPreview.useQuery(
+    { type: previewType },
+    { enabled: showPreview }
+  );
 
   const emails: { type: "welcome_free" | "welcome_premium" | "referral_reward"; label: string; desc: string; color: string }[] = [
     {
@@ -516,8 +524,15 @@ function EmailPreviewTab() {
     },
   ];
 
+  const handlePreview = (type: "welcome_free" | "welcome_premium" | "referral_reward") => {
+    setPreviewType(type);
+    setShowPreview(true);
+    // If same type, force refetch
+    if (previewType === type) refetchPreview();
+  };
+
   return (
-    <div className="space-y-4 max-w-2xl">
+    <div className="space-y-4 max-w-3xl">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -525,37 +540,80 @@ function EmailPreviewTab() {
             Email Preview & Test Send
           </CardTitle>
           <CardDescription>
-            Send a live test of each transactional email to your own admin email address. Useful for verifying templates before they reach real users.
+            Preview each transactional email template in an iframe, or send a live test to your admin inbox.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {emails.map((e) => (
-            <div key={e.type} className={`rounded-lg border p-4 flex items-start justify-between gap-4 ${e.color}`}>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm">{e.label}</p>
-                <p className="text-xs mt-0.5 opacity-80">{e.desc}</p>
-                {lastSent[e.type] && (
-                  <p className="text-xs mt-1 flex items-center gap-1 opacity-70">
-                    <CheckCircle className="h-3 w-3" />
-                    Last sent at {lastSent[e.type]}
-                  </p>
-                )}
+            <div key={e.type} className={`rounded-lg border p-4 ${e.color}`}>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm">{e.label}</p>
+                  <p className="text-xs mt-0.5 opacity-80">{e.desc}</p>
+                  {lastSent[e.type] && (
+                    <p className="text-xs mt-1 flex items-center gap-1 opacity-70">
+                      <CheckCircle className="h-3 w-3" />
+                      Last sent at {lastSent[e.type]}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 border-current"
+                    onClick={() => handlePreview(e.type)}
+                  >
+                    <Mail className="h-3.5 w-3.5" />
+                    {showPreview && previewType === e.type ? "Refresh" : "Preview"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 border-current"
+                    disabled={sendTestEmail.isPending}
+                    onClick={() => sendTestEmail.mutate({ type: e.type })}
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                    Send Test
+                  </Button>
+                </div>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="shrink-0 gap-1.5 border-current"
-                disabled={sendTestEmail.isPending}
-                onClick={() => sendTestEmail.mutate({ type: e.type })}
-              >
-                <Send className="h-3.5 w-3.5" />
-                Send Test
-              </Button>
             </div>
           ))}
+
+          {/* HTML iframe preview */}
+          {showPreview && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-semibold text-foreground">
+                  Preview: {emails.find(e => e.type === previewType)?.label}
+                </p>
+                <Button size="sm" variant="ghost" className="text-xs" onClick={() => setShowPreview(false)}>
+                  Close
+                </Button>
+              </div>
+              {previewLoading ? (
+                <div className="flex items-center justify-center h-48 bg-muted rounded-lg">
+                  <span className="text-sm text-muted-foreground">Loading preview...</span>
+                </div>
+              ) : previewData?.html ? (
+                <div className="rounded-lg border overflow-hidden shadow-sm">
+                  <iframe
+                    srcDoc={previewData.html}
+                    className="w-full"
+                    style={{ height: "520px", border: "none" }}
+                    sandbox="allow-same-origin"
+                    title={`Email preview: ${previewType}`}
+                  />
+                </div>
+              ) : null}
+            </div>
+          )}
+
           <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-500">
             <p className="font-medium mb-1">Note</p>
-            <p>Test emails are sent to your admin account email address only. They use real SendGrid delivery, so they will appear in your inbox exactly as users see them.</p>
+            <p>"Preview" renders the HTML template in an iframe directly in this panel. "Send Test" delivers a real email to your admin inbox via SendGrid so you can verify rendering in actual email clients.</p>
           </div>
         </CardContent>
       </Card>

@@ -51,7 +51,7 @@ export function PLChartOverlay({
   const PAD_LEFT = 72;
   const PAD_RIGHT = 28;
   const PAD_TOP = 20;
-  const PAD_BOTTOM = 20;
+  const PAD_BOTTOM = 32; // extra space for time axis labels
   const chartH = H - PAD_TOP - PAD_BOTTOM;
   const chartW = W - PAD_LEFT - PAD_RIGHT;
 
@@ -325,12 +325,36 @@ export function PLChartOverlay({
               </>
             )}
 
-            {/* 24h label on sparkline (bottom-left) */}
-            {sparklinePoints && (
-              <text x={PAD_LEFT + 2} y={H - 4} fontSize={8} fill="#94a3b8">
-                24h
-              </text>
-            )}
+            {/* Time axis labels along the bottom */}
+            {history.length >= 2 && (() => {
+              const firstMs = history[0].t;
+              const lastMs = history[history.length - 1].t;
+              const spanMs = lastMs - firstMs || 1;
+              // Show labels at 24h ago, 18h ago, 12h ago, 6h ago, Now
+              const labelOffsets = [
+                { label: "24h ago", ratio: 0 },
+                { label: "18h", ratio: 0.25 },
+                { label: "12h", ratio: 0.5 },
+                { label: "6h", ratio: 0.75 },
+                { label: "Now", ratio: 1 },
+              ];
+              return labelOffsets.map(({ label, ratio }) => {
+                const x = PAD_LEFT + ratio * chartW;
+                const anchor = ratio === 0 ? "start" : ratio === 1 ? "end" : "middle";
+                return (
+                  <text
+                    key={label}
+                    x={x}
+                    y={H - 4}
+                    textAnchor={anchor}
+                    fontSize={8}
+                    fill="#94a3b8"
+                  >
+                    {label}
+                  </text>
+                );
+              });
+            })()}
           </svg>
         </div>
 

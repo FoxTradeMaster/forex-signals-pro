@@ -3,14 +3,34 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, TrendingUp, TrendingDown, Download } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, Download, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useLocation } from "wouter";
 
 type TimeRange = "7d" | "30d" | "90d" | "all";
+type SortKey = "pair" | "plDollars" | "plPips" | "date";
+type SortDir = "asc" | "desc";
 
 export default function SignalHistory() {
   const [, navigate] = useLocation();
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
+  const [sortKey, setSortKey] = useState<SortKey>("date");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir(d => d === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir("desc");
+    }
+  };
+
+  const SortIcon = ({ col }: { col: SortKey }) => {
+    if (sortKey !== col) return <ArrowUpDown className="h-3 w-3 opacity-40 ml-1 inline" />;
+    return sortDir === "asc"
+      ? <ArrowUp className="h-3 w-3 ml-1 inline text-orange-500" />
+      : <ArrowDown className="h-3 w-3 ml-1 inline text-orange-500" />;
+  };
 
   // Fetch historical performance data
   const daysMap: Record<TimeRange, number | undefined> = {
@@ -263,18 +283,49 @@ export default function SignalHistory() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left py-3 px-4">Pair</th>
+                        <th
+                          className="text-left py-3 px-4 cursor-pointer select-none hover:text-orange-600 whitespace-nowrap"
+                          onClick={() => handleSort("pair")}
+                        >
+                          Pair<SortIcon col="pair" />
+                        </th>
                         <th className="text-left py-3 px-4">Type</th>
                         <th className="text-right py-3 px-4">Entry</th>
                         <th className="text-right py-3 px-4">Close Price</th>
                         <th className="text-center py-3 px-4">Outcome</th>
-                        <th className="text-right py-3 px-4">P/L ($)</th>
-                        <th className="text-right py-3 px-4">P/L (pips)</th>
-                        <th className="text-right py-3 px-4">Date</th>
+                        <th
+                          className="text-right py-3 px-4 cursor-pointer select-none hover:text-orange-600 whitespace-nowrap"
+                          onClick={() => handleSort("plDollars")}
+                        >
+                          P/L ($)<SortIcon col="plDollars" />
+                        </th>
+                        <th
+                          className="text-right py-3 px-4 cursor-pointer select-none hover:text-orange-600 whitespace-nowrap"
+                          onClick={() => handleSort("plPips")}
+                        >
+                          P/L (pips)<SortIcon col="plPips" />
+                        </th>
+                        <th
+                          className="text-right py-3 px-4 cursor-pointer select-none hover:text-orange-600 whitespace-nowrap"
+                          onClick={() => handleSort("date")}
+                        >
+                          Date<SortIcon col="date" />
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {historyData.signals.map((signal) => (
+                      {[...(historyData.signals)].sort((a, b) => {
+                        let cmp = 0;
+                        if (sortKey === "pair") cmp = a.pair.localeCompare(b.pair);
+                        else if (sortKey === "plDollars") cmp = a.plDollars - b.plDollars;
+                        else if (sortKey === "plPips") cmp = a.plPips - b.plPips;
+                        else if (sortKey === "date") {
+                          const aDate = (a as any).closedAt ? new Date((a as any).closedAt).getTime() : new Date(a.createdAt).getTime();
+                          const bDate = (b as any).closedAt ? new Date((b as any).closedAt).getTime() : new Date(b.createdAt).getTime();
+                          cmp = aDate - bDate;
+                        }
+                        return sortDir === "asc" ? cmp : -cmp;
+                      }).map((signal) => (
                         <tr key={signal.signalId} className="border-b hover:bg-muted/50">
                           <td className="py-3 px-4 font-semibold">{signal.pair}</td>
                           <td className="py-3 px-4">

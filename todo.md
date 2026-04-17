@@ -736,3 +736,8 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Mobile-responsive Signal History header: two-row layout — Row 1 has back button + title (truncated on mobile), Row 2 has flex-wrap time-range buttons + Export CSV; "Back to Dashboard" text hidden on mobile (shows "Back")
 - [x] Signal creation marker on sparkline: orange dashed vertical line + circle dot + "Signal" label at the signal's createdAt timestamp on the 24h sparkline; createdAt passed through SignalCard → PLBadge → PLChartOverlay
 - [x] Admin email preview: new "Email Preview" tab in Admin panel (4-column TabsList, responsive 2-col on mobile); EmailPreviewTab component with Send Test buttons for Free Welcome, Premium Welcome, and Referral Reward emails; shows last-sent timestamp after each test; admin.sendTestEmail tRPC mutation added to routers.ts
+
+## Phase 76: Three New Features (Apr 17, 2026) - COMPLETE ✅
+- [x] Signal History sortable columns: SortKey/SortDir state; Pair, P/L ($), P/L (pips), Date headers clickable with ArrowUpDown/ArrowUp/ArrowDown icons; sort applied client-side via [...signals].sort()
+- [x] PLChartOverlay time axis labels: PAD_BOTTOM increased to 32px; 5 labels (24h ago, 18h, 12h, 6h, Now) rendered at evenly-spaced ratios along bottom of SVG sparkline
+- [x] Admin email HTML iframe preview: getEmailPreview tRPC query returns raw HTML; EmailPreviewTab has "Preview" + "Send Test" buttons per email; renders in 520px-tall iframe with sandbox="allow-same-origin"; "Close" button dismisses; "Refresh" re-fetches same type
