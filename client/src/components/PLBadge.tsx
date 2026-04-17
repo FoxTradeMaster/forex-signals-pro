@@ -13,6 +13,7 @@ interface PLBadgeProps {
     entryPrice: string;
     stopLoss: string;
     takeProfit: string;
+    createdAt?: string | Date;
   };
 }
 

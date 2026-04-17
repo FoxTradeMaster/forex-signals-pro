@@ -94,43 +94,45 @@ export default function SignalHistory() {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50">
       {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/")}
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
-              </Button>
-              <h1 className="text-2xl font-bold">Signal Performance History</h1>
-            </div>
+        <div className="container py-3">
+          {/* Row 1: Back button + Title */}
+          <div className="flex items-center gap-3 mb-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/")}
+              className="shrink-0"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Back to Dashboard</span>
+              <span className="sm:hidden">Back</span>
+            </Button>
+            <h1 className="text-lg sm:text-2xl font-bold truncate">Signal Performance History</h1>
+          </div>
 
-            {/* Time Range Filter + Export */}
-            <div className="flex gap-2 items-center">
-              {(["7d", "30d", "90d", "all"] as TimeRange[]).map((range) => (
-                <Button
-                  key={range}
-                  variant={timeRange === range ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setTimeRange(range)}
-                >
-                  {range === "all" ? "All Time" : range.toUpperCase()}
-                </Button>
-              ))}
+          {/* Row 2: Time Range Filter + Export CSV — wraps on mobile */}
+          <div className="flex flex-wrap gap-2 items-center">
+            {(["7d", "30d", "90d", "all"] as TimeRange[]).map((range) => (
               <Button
-                variant="outline"
+                key={range}
+                variant={timeRange === range ? "default" : "outline"}
                 size="sm"
-                onClick={exportCSV}
-                disabled={!historyData?.signals?.length}
-                className="ml-2 gap-1.5 border-orange-300 text-orange-600 hover:bg-orange-50"
+                onClick={() => setTimeRange(range)}
+                className="text-xs px-3"
               >
-                <Download className="h-3.5 w-3.5" />
-                Export CSV
+                {range === "all" ? "All Time" : range.toUpperCase()}
               </Button>
-            </div>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportCSV}
+              disabled={!historyData?.signals?.length}
+              className="gap-1.5 border-orange-300 text-orange-600 hover:bg-orange-50 text-xs px-3"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Export CSV
+            </Button>
           </div>
         </div>
       </header>

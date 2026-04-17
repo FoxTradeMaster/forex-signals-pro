@@ -11,6 +11,7 @@ interface PLChartOverlayProps {
     entryPrice: string;
     stopLoss: string;
     takeProfit: string;
+    createdAt?: string | Date;
   };
   currentPrice: number;
   plDollars: number;
@@ -84,6 +85,18 @@ export function PLChartOverlay({
           })
           .join(" ")
       : "";
+
+  // Calculate the X position of the signal creation timestamp on the sparkline
+  // The sparkline spans the last 24h; we map the signal's createdAt to that range
+  const signalCreationX: number | null = (() => {
+    if (!signal.createdAt || history.length < 2) return null;
+    const createdMs = new Date(signal.createdAt).getTime();
+    const firstMs = history[0].t;
+    const lastMs = history[history.length - 1].t;
+    if (createdMs < firstMs || createdMs > lastMs) return null; // outside visible range
+    const ratio = (createdMs - firstMs) / (lastMs - firstMs);
+    return PAD_LEFT + ratio * chartW;
+  })();
 
   // Profit / loss zone bands
   const profitZoneTop = Math.min(yEntry, yTP);
@@ -279,6 +292,38 @@ export function PLChartOverlay({
             >
               Now
             </text>
+
+            {/* Signal creation timestamp marker */}
+            {signalCreationX !== null && (
+              <>
+                <line
+                  x1={signalCreationX}
+                  y1={PAD_TOP}
+                  x2={signalCreationX}
+                  y2={H - PAD_BOTTOM}
+                  stroke="#f97316"
+                  strokeWidth={1.5}
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.75}
+                />
+                <circle
+                  cx={signalCreationX}
+                  cy={PAD_TOP + 6}
+                  r={3}
+                  fill="#f97316"
+                  opacity={0.85}
+                />
+                <text
+                  x={signalCreationX + 4}
+                  y={PAD_TOP + 10}
+                  fontSize={7}
+                  fill="#f97316"
+                  fontWeight="600"
+                >
+                  Signal
+                </text>
+              </>
+            )}
 
             {/* 24h label on sparkline (bottom-left) */}
             {sparklinePoints && (

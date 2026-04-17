@@ -135,6 +135,7 @@ export function SignalCard({ signal, onDismiss, isPremium = false }: SignalCardP
                   entryPrice: signal.entryPrice,
                   stopLoss: signal.stopLoss,
                   takeProfit: signal.takeProfit,
+                  createdAt: signal.createdAt,
                 }}
               />
             )}

@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
-import { Search, UserCheck, UserX, ShieldCheck, ShieldOff, Calendar, RefreshCw, DollarSign, Users, CreditCard, TrendingUp } from "lucide-react";
+import { Search, UserCheck, UserX, ShieldCheck, ShieldOff, Calendar, RefreshCw, DollarSign, Users, CreditCard, TrendingUp, Mail, Send, CheckCircle } from "lucide-react";
 
 export default function Admin() {
   const { user, loading } = useAuth();
@@ -169,10 +169,11 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="users" className="space-y-4">
-          <TabsList className="grid grid-cols-3 w-full max-w-md">
+          <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full max-w-2xl">
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
             <TabsTrigger value="grant">Grant Access</TabsTrigger>
+            <TabsTrigger value="emails">Email Preview</TabsTrigger>
           </TabsList>
 
           {/* Users Tab */}
@@ -433,6 +434,11 @@ export default function Admin() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Email Preview Tab */}
+          <TabsContent value="emails">
+            <EmailPreviewTab />
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -474,6 +480,85 @@ export default function Admin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+/** Standalone sub-component for the Email Preview tab */
+function EmailPreviewTab() {
+  const [lastSent, setLastSent] = useState<Record<string, string>>({});
+  const sendTestEmail = trpc.admin.sendTestEmail.useMutation({
+    onSuccess: (data, variables) => {
+      toast.success(data.message);
+      setLastSent(prev => ({ ...prev, [variables.type]: new Date().toLocaleTimeString() }));
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const emails: { type: "welcome_free" | "welcome_premium" | "referral_reward"; label: string; desc: string; color: string }[] = [
+    {
+      type: "welcome_free",
+      label: "Free Tier Welcome",
+      desc: "Sent to new users who sign up on the free plan. Includes upgrade CTA and feature overview.",
+      color: "text-blue-600 bg-blue-50 border-blue-200",
+    },
+    {
+      type: "welcome_premium",
+      label: "Premium/Pro Welcome",
+      desc: "Sent to new subscribers after their first magic link activation. Includes user guide PDF attachment.",
+      color: "text-green-600 bg-green-50 border-green-200",
+    },
+    {
+      type: "referral_reward",
+      label: "Referral Reward",
+      desc: "Sent to the referrer when their friend upgrades to a paid plan. Confirms the free month granted.",
+      color: "text-orange-600 bg-orange-50 border-orange-200",
+    },
+  ];
+
+  return (
+    <div className="space-y-4 max-w-2xl">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5 text-orange-500" />
+            Email Preview & Test Send
+          </CardTitle>
+          <CardDescription>
+            Send a live test of each transactional email to your own admin email address. Useful for verifying templates before they reach real users.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {emails.map((e) => (
+            <div key={e.type} className={`rounded-lg border p-4 flex items-start justify-between gap-4 ${e.color}`}>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm">{e.label}</p>
+                <p className="text-xs mt-0.5 opacity-80">{e.desc}</p>
+                {lastSent[e.type] && (
+                  <p className="text-xs mt-1 flex items-center gap-1 opacity-70">
+                    <CheckCircle className="h-3 w-3" />
+                    Last sent at {lastSent[e.type]}
+                  </p>
+                )}
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0 gap-1.5 border-current"
+                disabled={sendTestEmail.isPending}
+                onClick={() => sendTestEmail.mutate({ type: e.type })}
+              >
+                <Send className="h-3.5 w-3.5" />
+                Send Test
+              </Button>
+            </div>
+          ))}
+          <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-500">
+            <p className="font-medium mb-1">Note</p>
+            <p>Test emails are sent to your admin account email address only. They use real SendGrid delivery, so they will appear in your inbox exactly as users see them.</p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -970,6 +970,31 @@ export const appRouter = router({
         await db.update(users).set({ role: "user" }).where(eq(users.id, input.userId));
         return { success: true, message: "Admin role removed" };
       }),
+
+    // Send a test email preview to the admin's own email address
+    sendTestEmail: protectedProcedure
+      .input(z.object({
+        type: z.enum(["welcome_free", "welcome_premium", "referral_reward"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const adminUser = await getUser(ctx.user.id);
+        if (!adminUser || adminUser.role !== "admin") throw new Error("Unauthorized: Admin access required");
+        const toEmail = adminUser.email;
+        if (!toEmail) throw new Error("Admin account has no email address");
+        const toName = adminUser.name || "Admin";
+
+        const { sendFreeWelcomeEmail, sendWelcomeEmail, sendReferralRewardEmail } = await import("./email");
+
+        if (input.type === "welcome_free") {
+          await sendFreeWelcomeEmail(toEmail, toName);
+        } else if (input.type === "welcome_premium") {
+          await sendWelcomeEmail(toEmail, toName, "monthly");
+        } else if (input.type === "referral_reward") {
+          await sendReferralRewardEmail(toEmail, toName, "Test Friend", 1);
+        }
+
+        return { success: true, message: `Test "${input.type}" email sent to ${toEmail}` };
+      }),
   }),
   // Alert preferences and historyy
   alerts: router({
