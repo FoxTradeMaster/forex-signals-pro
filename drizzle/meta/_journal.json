@@ -78,6 +78,13 @@
       "when": 1776034514361,
       "tag": "0010_deep_madame_web",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1776387762466,
+      "tag": "0011_sweet_nico_minoru",
+      "breakpoints": true
     }
   ]
 }

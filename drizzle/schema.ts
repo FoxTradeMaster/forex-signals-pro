@@ -116,6 +116,9 @@ export const signalPerformance = pgTable("signal_performance", {
   plDollars: varchar("plDollars", { length: 20 }),
   plPips: varchar("plPips", { length: 20 }),
   plPercentage: varchar("plPercentage", { length: 20 }),
+  // Outcome tracking — set when signal is resolved (TP/SL hit)
+  outcome: varchar("outcome", { length: 20 }), // target_hit | stop_loss_hit | active
+  closedAt: timestamp("closedAt"),              // When the signal was resolved
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

@@ -208,7 +208,8 @@ export default function SignalHistory() {
                         <th className="text-left py-3 px-4">Pair</th>
                         <th className="text-left py-3 px-4">Type</th>
                         <th className="text-right py-3 px-4">Entry</th>
-                        <th className="text-right py-3 px-4">Current</th>
+                        <th className="text-right py-3 px-4">Close Price</th>
+                        <th className="text-center py-3 px-4">Outcome</th>
                         <th className="text-right py-3 px-4">P/L ($)</th>
                         <th className="text-right py-3 px-4">P/L (pips)</th>
                         <th className="text-right py-3 px-4">Date</th>
@@ -225,6 +226,21 @@ export default function SignalHistory() {
                           </td>
                           <td className="text-right py-3 px-4">{signal.entryPrice}</td>
                           <td className="text-right py-3 px-4">{signal.currentPrice}</td>
+                          <td className="text-center py-3 px-4">
+                            {(signal as any).outcome === "target_hit" ? (
+                              <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                                ✅ TP Hit
+                              </span>
+                            ) : (signal as any).outcome === "stop_loss_hit" ? (
+                              <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-700 bg-red-100 px-2 py-0.5 rounded-full">
+                                ❌ SL Hit
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                                ⏳ Active
+                              </span>
+                            )}
+                          </td>
                           <td className={`text-right py-3 px-4 font-semibold ${signal.plDollars >= 0 ? "text-green-600" : "text-red-600"}`}>
                             {formatCurrency(signal.plDollars)}
                           </td>
@@ -232,7 +248,9 @@ export default function SignalHistory() {
                             {formatPips(signal.plPips)}
                           </td>
                           <td className="text-right py-3 px-4 text-sm text-muted-foreground">
-                            {new Date(signal.createdAt).toLocaleDateString()}
+                            {(signal as any).closedAt
+                              ? new Date((signal as any).closedAt).toLocaleDateString()
+                              : new Date(signal.createdAt).toLocaleDateString()}
                           </td>
                         </tr>
                       ))}

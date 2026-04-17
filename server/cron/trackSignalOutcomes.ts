@@ -59,21 +59,30 @@ async function trackSignalOutcomes(): Promise<TrackingResult> {
       const status = getSignalStatus(signal, currentPrice);
 
       if (status === "target_hit" || status === "stop_loss_hit") {
-        // Deactivate the signal
-        await deactivateSignal(signal.id);
-
-        // Record the outcome on the signal row itself (outcomeStatus column if it exists)
+        // Persist final P/L with outcome and closedAt before deactivating
         try {
           const db = await getDb();
           if (db) {
+            const { signalPerformance } = await import("../../drizzle/schema");
             await db
-              .update(signals)
-              .set({ outcomeStatus: status } as any)
-              .where(eq(signals.id, signal.id));
+              .update(signalPerformance)
+              .set({
+                outcome: status,
+                closedAt: new Date(),
+                currentPrice: currentPrice.toString(),
+                plDollars: pl.plDollars.toFixed(2),
+                plPips: pl.plPips.toFixed(1),
+                plPercentage: pl.plPercentage.toFixed(4),
+                updatedAt: new Date(),
+              } as any)
+              .where(eq(signalPerformance.signalId, signal.id));
           }
-        } catch {
-          // outcomeStatus column may not exist yet — non-fatal
+        } catch (outcomeErr) {
+          console.warn(`[Track] Could not persist outcome for ${signal.id} (non-fatal):`, outcomeErr);
         }
+
+        // Deactivate the signal
+        await deactivateSignal(signal.id);
 
         result.resolved++;
         if (status === "target_hit") {

@@ -50,7 +50,8 @@ export function SignalCard({ signal, onDismiss, isPremium = false }: SignalCardP
   // Check if this pair is locked (not EUR/USD and user is not premium)
   const isLocked = signal.pair !== "EUR/USD" && !isPremium;
 
-  // Compute P/L from live price data passed from parent (signals.getActive already fetches live prices)
+  // Compute P/L from live price data passed from parent (signals.getWithStatus fetches live prices)
+  // Show badge even when market is closed — use last known price
   const livePL = (() => {
     const currentPrice = signal.currentPrice;
     const plDollars = signal.plDollars;
@@ -121,12 +122,20 @@ export function SignalCard({ signal, onDismiss, isPremium = false }: SignalCardP
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* P/L Badge (visible to all users as a teaser) */}
+            {/* P/L Badge (visible to all users as a teaser, shown even when market is closed) */}
             {livePL && (
               <PLBadge
                 plDollars={livePL.plDollars}
                 plPips={livePL.plPips}
                 currentPrice={livePL.currentPrice}
+                marketClosed={!!isMarketClosed}
+                signal={{
+                  pair: signal.pair,
+                  signalType: signal.signalType,
+                  entryPrice: signal.entryPrice,
+                  stopLoss: signal.stopLoss,
+                  takeProfit: signal.takeProfit,
+                }}
               />
             )}
             {onDismiss && (

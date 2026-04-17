@@ -721,3 +721,8 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] PLBadge: restyled to compact green/red modal matching screenshot design
 - [x] Dashboard: passes `currentPrice` and `plDollars` to all 3 SignalCard render sites (All/Buy/Sell tabs); auto-refreshes every 5 min
 - [x] Pre-existing pl-tracking.test.ts failures confirmed unrelated (require live DB, fail on all checkpoints)
+
+## Phase 73: P/L Badge Enhancements (Apr 16, 2026) - COMPLETE ✅
+- [x] Badge during market-closed hours: PLBadge now accepts `marketClosed` prop; shows grey "Market Closed" label with last known price and P/L instead of hiding
+- [x] P/L at close persistence: signalPerformance schema gains `outcome` + `closedAt` columns; trackSignalOutcomes cron writes final P/L + outcome + closedAt before deactivating; Signal History table shows TP Hit / SL Hit / Active badges and uses closedAt as the date
+- [x] Clickable badge: new PLChartOverlay component (Dialog) with SVG sparkline showing entry, current, TP, SL price levels; progress bar to TP; legend; badge shows "tap for chart" hint
