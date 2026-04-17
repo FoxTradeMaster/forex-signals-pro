@@ -48,9 +48,11 @@ export default function Dashboard() {
   console.log('Current Tier:', currentTier);
   console.log('Available Pairs:', availablePairs);
 
-  // Fetch active signals
+  // Fetch active signals with live prices and P/L data
   const { data: signals, isLoading: signalsLoading, refetch: refetchSignals } = 
-    trpc.signals.getActive.useQuery({ limit: 50 });
+    trpc.signals.getWithStatus.useQuery({ limit: 50 }, {
+      refetchInterval: 5 * 60 * 1000, // Refresh every 5 minutes to keep P/L current
+    });
 
   // Fetch signal stats (count, last generated, streak)
   const { data: signalStats, refetch: refetchStats } = trpc.signals.getStats.useQuery(undefined, {
@@ -96,6 +98,10 @@ export default function Dashboard() {
         aiKeyFactors: s.aiKeyFactors ? (typeof s.aiKeyFactors === 'string' ? s.aiKeyFactors : JSON.stringify(s.aiKeyFactors)) : null,
         aiInsight: s.aiInsight || null,
         isAiGenerated: s.isAiGenerated ? 'true' : 'false',
+        // New signals just generated — no live price yet, P/L will show after first refresh
+        status: 'active' as const,
+        currentPrice: undefined,
+        plDollars: 0,
       }));
       setLocalSignals(mapped);
       refetchSignals();
@@ -865,6 +871,8 @@ export default function Dashboard() {
                       aiKeyFactors: signal.aiKeyFactors,
                       aiInsight: signal.aiInsight,
                       isAiGenerated: signal.isAiGenerated,
+                      currentPrice: signal.currentPrice ?? null,
+                      plDollars: signal.plDollars ?? null,
                     }} 
                     isPremium={isPremium}
                   />
@@ -898,6 +906,8 @@ export default function Dashboard() {
                       aiKeyFactors: signal.aiKeyFactors,
                       aiInsight: signal.aiInsight,
                       isAiGenerated: signal.isAiGenerated,
+                      currentPrice: signal.currentPrice ?? null,
+                      plDollars: signal.plDollars ?? null,
                     }} 
                     isPremium={isPremium}
                   />
@@ -924,6 +934,8 @@ export default function Dashboard() {
                       aiKeyFactors: signal.aiKeyFactors,
                       aiInsight: signal.aiInsight,
                       isAiGenerated: signal.isAiGenerated,
+                      currentPrice: signal.currentPrice ?? null,
+                      plDollars: signal.plDollars ?? null,
                     }} 
                     isPremium={isPremium}
                   />

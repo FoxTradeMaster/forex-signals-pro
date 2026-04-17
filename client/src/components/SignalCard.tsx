@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowDown, ArrowUp, TrendingUp, X, Clock, BookOpen, Brain, ChevronDown, ChevronUp } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { PLBadge } from "@/components/PLBadge";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 interface SignalCardProps {
   signal: {
@@ -25,13 +25,15 @@ interface SignalCardProps {
     aiKeyFactors?: string | null; // JSON string
     aiInsight?: string | null;
     isAiGenerated?: string | null;
+    // Live price data passed from parent (from signals.getActive)
+    currentPrice?: number | null;
+    plDollars?: number | null;
   };
   onDismiss?: (id: string) => void;
   isPremium?: boolean; // Whether user has premium access
 }
 
 export function SignalCard({ signal, onDismiss, isPremium = false }: SignalCardProps) {
-  const [mounted, setMounted] = useState(false);
   const [showAiReasoning, setShowAiReasoning] = useState(false);
   
   const isAiSignal = signal.isAiGenerated === "true";
@@ -48,15 +50,18 @@ export function SignalCard({ signal, onDismiss, isPremium = false }: SignalCardP
   // Check if this pair is locked (not EUR/USD and user is not premium)
   const isLocked = signal.pair !== "EUR/USD" && !isPremium;
 
-  // Fetch P/L data (for all users as a teaser)
-  const { data: plData } = trpc.pl.getSignalPerformance.useQuery(
-    { signalId: signal.id },
-    { enabled: mounted }
-  );
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Compute P/L from live price data passed from parent (signals.getActive already fetches live prices)
+  const livePL = (() => {
+    const currentPrice = signal.currentPrice;
+    const plDollars = signal.plDollars;
+    if (currentPrice == null || plDollars == null) return null;
+    // Calculate pips: for JPY pairs 1 pip = 0.01, otherwise 0.0001
+    const pipValue = signal.pair.includes('JPY') ? 0.01 : 0.0001;
+    const entryPrice = parseFloat(signal.entryPrice);
+    const priceDiff = isBuy ? currentPrice - entryPrice : entryPrice - currentPrice;
+    const plPips = priceDiff / pipValue;
+    return { plDollars, plPips, currentPrice };
+  })();
 
   const strategyLabels: Record<string, string> = {
     swing: "Swing Trading",
@@ -117,11 +122,11 @@ export function SignalCard({ signal, onDismiss, isPremium = false }: SignalCardP
           </div>
           <div className="flex items-center gap-2">
             {/* P/L Badge (visible to all users as a teaser) */}
-            {mounted && plData && (
+            {livePL && (
               <PLBadge
-                plDollars={parseFloat(plData.plDollars || "0")}
-                plPips={parseFloat(plData.plPips || "0")}
-                currentPrice={parseFloat(plData.currentPrice || "0")}
+                plDollars={livePL.plDollars}
+                plPips={livePL.plPips}
+                currentPrice={livePL.currentPrice}
               />
             )}
             {onDismiss && (

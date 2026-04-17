@@ -714,3 +714,10 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Refer-a-Friend reward backend: grantReferralReward() in db.ts — auto-grants 1 free month to referrer when referred user converts to paid plan (hooked into capturePayment in routers.ts)
 - [x] Signal performance auto-tracking: server/cron/trackSignalOutcomes.ts — runs every 30 min, fetches live prices, detects TP/SL hits, deactivates resolved signals, triggers AI Brain learning; registered in render.yaml
 - [x] Welcome email for free-tier sign-ups: sendFreeWelcomeEmail() in email.ts — fires on new OAuth login (oauth.ts) and on requestFreeSignup endpoint (routers.ts); premium/pro magic link users get sendWelcomeEmail() on first activation
+
+## Phase 72: Fix P/L Badge (IN PROFIT +0.00 USD / +0.0 pips always showing zero) - COMPLETE ✅
+- [x] Root cause: Dashboard used `signals.getActive` (no price fetch) — switched to `signals.getWithStatus` which batch-fetches live Polygon prices for all unique pairs in one call
+- [x] SignalCard: removed stale `getSignalPerformance` DB query (always returned 0), now receives `currentPrice`/`plDollars` from parent; pips calculated client-side
+- [x] PLBadge: restyled to compact green/red modal matching screenshot design
+- [x] Dashboard: passes `currentPrice` and `plDollars` to all 3 SignalCard render sites (All/Buy/Sell tabs); auto-refreshes every 5 min
+- [x] Pre-existing pl-tracking.test.ts failures confirmed unrelated (require live DB, fail on all checkpoints)
