@@ -159,3 +159,51 @@ export function getSignalStatus(
 
   return "active";
 }
+
+/**
+ * Get 24-hour price history for a forex pair (hourly candles).
+ * Returns an array of { t: timestamp_ms, c: close_price } sorted oldest → newest.
+ * Falls back to an empty array if the API is unavailable.
+ */
+export async function getPriceHistory(
+  pair: string,
+  hours: number = 24
+): Promise<Array<{ t: number; c: number }>> {
+  try {
+    const polygonPair = formatForexPair(pair);
+    const apiKey = ENV.polygonApiKey;
+
+    if (!apiKey) {
+      console.warn('[Polygon] API key not configured — skipping price history');
+      return [];
+    }
+
+    // Use Polygon aggregates endpoint: 1-hour candles for the last `hours` hours
+    const to = new Date();
+    const from = new Date(to.getTime() - hours * 60 * 60 * 1000);
+
+    const toStr = to.toISOString().split('T')[0];
+    const fromStr = from.toISOString().split('T')[0];
+
+    const url =
+      `https://api.polygon.io/v2/aggs/ticker/${polygonPair}/range/1/hour/${fromStr}/${toStr}` +
+      `?adjusted=true&sort=asc&limit=50&apiKey=${apiKey}`;
+
+    const response = await fetch(url);
+    const data = await response.json() as {
+      status: string;
+      results?: Array<{ t: number; c: number }>;
+    };
+
+    if (data.status === 'OK' && Array.isArray(data.results) && data.results.length > 0) {
+      return data.results.map((r) => ({ t: r.t, c: r.c }));
+    }
+
+    // Polygon free tier may return 'DELAYED' or empty results on weekends/holidays
+    console.warn(`[Polygon] No history data for ${pair}:`, (data as any).error || data.status);
+    return [];
+  } catch (error) {
+    console.error(`[Polygon] Error fetching price history for ${pair}:`, error);
+    return [];
+  }
+}

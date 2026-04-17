@@ -1,5 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { TrendingUp, TrendingDown, Target, ShieldAlert } from "lucide-react";
+import { TrendingUp, TrendingDown, Target, ShieldAlert, Loader2 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 
 interface PLChartOverlayProps {
   open: boolean;
@@ -17,14 +18,10 @@ interface PLChartOverlayProps {
 }
 
 /**
- * A mini sparkline chart overlay that visualises where the current price sits
- * relative to the signal's entry, take-profit, and stop-loss levels.
- *
- * Layout (vertical price axis):
- *   TP ──────────────────────── (green zone top)
- *   Current ─────────────────── (current price marker)
- *   Entry ───────────────────── (entry price marker)
- *   SL ──────────────────────── (red zone bottom)
+ * Mini chart overlay showing:
+ *  - A faint 24h hourly sparkline (real Polygon data)
+ *  - Horizontal dashed lines for Entry, TP, SL, and Current price
+ *  - A progress bar toward Take Profit
  */
 export function PLChartOverlay({
   open,
@@ -40,18 +37,26 @@ export function PLChartOverlay({
   const isBuy = signal.signalType === "BUY";
   const isProfit = plDollars >= 0;
 
+  // Fetch 24h price history only when the dialog is open
+  const { data: history = [], isLoading: historyLoading } =
+    trpc.market.getPriceHistory.useQuery(
+      { pair: signal.pair, hours: 24 },
+      { enabled: open, staleTime: 5 * 60 * 1000 }
+    );
+
   // SVG dimensions
   const W = 320;
   const H = 220;
   const PAD_LEFT = 72;
-  const PAD_RIGHT = 20;
+  const PAD_RIGHT = 28;
   const PAD_TOP = 20;
   const PAD_BOTTOM = 20;
   const chartH = H - PAD_TOP - PAD_BOTTOM;
   const chartW = W - PAD_LEFT - PAD_RIGHT;
 
-  // Price range — add 20% padding above TP and below SL
-  const allPrices = [entry, tp, sl, currentPrice];
+  // Combine all prices to determine y-axis range
+  const historyPrices = history.map((d) => d.c);
+  const allPrices = [entry, tp, sl, currentPrice, ...historyPrices];
   const minP = Math.min(...allPrices);
   const maxP = Math.max(...allPrices);
   const range = maxP - minP || 0.0001;
@@ -68,23 +73,32 @@ export function PLChartOverlay({
   const ySL = toY(sl);
   const yCurrent = toY(currentPrice);
 
-  // Determine profit zone (between entry and TP) vs loss zone (between entry and SL)
+  // Build SVG polyline points for the 24h sparkline
+  const sparklinePoints =
+    history.length >= 2
+      ? history
+          .map((d, i) => {
+            const x = PAD_LEFT + (i / (history.length - 1)) * chartW;
+            const y = toY(d.c);
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+          })
+          .join(" ")
+      : "";
+
+  // Profit / loss zone bands
   const profitZoneTop = Math.min(yEntry, yTP);
   const profitZoneH = Math.abs(yEntry - yTP);
   const lossZoneTop = Math.min(yEntry, ySL);
   const lossZoneH = Math.abs(yEntry - ySL);
 
-  const formatPrice = (p: number) => {
-    if (signal.pair.includes("JPY")) return p.toFixed(3);
-    return p.toFixed(5);
-  };
+  const formatPrice = (p: number) =>
+    signal.pair.includes("JPY") ? p.toFixed(3) : p.toFixed(5);
 
   const formatPL = (val: number, suffix: string) => {
     const sign = val >= 0 ? "+" : "";
     return `${sign}${val.toFixed(suffix === "$" ? 2 : 1)} ${suffix}`;
   };
 
-  // Progress bar: how far from entry toward TP (clamped 0–100%)
   const progressToTP = isBuy
     ? Math.max(0, Math.min(100, ((currentPrice - entry) / (tp - entry)) * 100))
     : Math.max(0, Math.min(100, ((entry - currentPrice) / (entry - tp)) * 100));
@@ -139,7 +153,12 @@ export function PLChartOverlay({
         </div>
 
         {/* SVG Chart */}
-        <div className="px-5 pb-2">
+        <div className="px-5 pb-2 relative">
+          {historyLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/60 z-10 rounded-lg">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          )}
           <svg
             width={W}
             height={H}
@@ -153,7 +172,7 @@ export function PLChartOverlay({
               width={chartW}
               height={profitZoneH}
               fill="#22c55e"
-              opacity={0.08}
+              opacity={0.07}
             />
             {/* Loss zone (red band) */}
             <rect
@@ -162,8 +181,21 @@ export function PLChartOverlay({
               width={chartW}
               height={lossZoneH}
               fill="#ef4444"
-              opacity={0.08}
+              opacity={0.07}
             />
+
+            {/* 24h sparkline — rendered behind the level lines */}
+            {sparklinePoints && (
+              <polyline
+                points={sparklinePoints}
+                fill="none"
+                stroke={isProfit ? "#22c55e" : "#ef4444"}
+                strokeWidth={1.5}
+                strokeOpacity={0.45}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+            )}
 
             {/* TP line */}
             <line
@@ -205,49 +237,24 @@ export function PLChartOverlay({
               strokeWidth={2}
             />
 
-            {/* Current price dot */}
+            {/* Current price dot at end of sparkline */}
             <circle
-              cx={PAD_LEFT + chartW * 0.75}
+              cx={PAD_LEFT + chartW}
               cy={yCurrent}
-              r={5}
+              r={4}
               fill={isProfit ? "#16a34a" : "#dc2626"}
             />
 
             {/* Price labels (left axis) */}
-            {/* TP */}
-            <text
-              x={PAD_LEFT - 6}
-              y={yTP + 4}
-              textAnchor="end"
-              fontSize={9}
-              fill="#16a34a"
-              fontWeight="600"
-            >
+            <text x={PAD_LEFT - 6} y={yTP + 4} textAnchor="end" fontSize={9} fill="#16a34a" fontWeight="600">
               {formatPrice(tp)}
             </text>
-            {/* SL */}
-            <text
-              x={PAD_LEFT - 6}
-              y={ySL + 4}
-              textAnchor="end"
-              fontSize={9}
-              fill="#dc2626"
-              fontWeight="600"
-            >
+            <text x={PAD_LEFT - 6} y={ySL + 4} textAnchor="end" fontSize={9} fill="#dc2626" fontWeight="600">
               {formatPrice(sl)}
             </text>
-            {/* Entry */}
-            <text
-              x={PAD_LEFT - 6}
-              y={yEntry + 4}
-              textAnchor="end"
-              fontSize={9}
-              fill="#6366f1"
-              fontWeight="600"
-            >
+            <text x={PAD_LEFT - 6} y={yEntry + 4} textAnchor="end" fontSize={9} fill="#6366f1" fontWeight="600">
               {formatPrice(entry)}
             </text>
-            {/* Current */}
             <text
               x={PAD_LEFT - 6}
               y={yCurrent + 4}
@@ -260,33 +267,9 @@ export function PLChartOverlay({
             </text>
 
             {/* Right-side labels */}
-            <text
-              x={W - PAD_RIGHT + 4}
-              y={yTP + 4}
-              fontSize={8}
-              fill="#16a34a"
-              fontWeight="600"
-            >
-              TP
-            </text>
-            <text
-              x={W - PAD_RIGHT + 4}
-              y={ySL + 4}
-              fontSize={8}
-              fill="#dc2626"
-              fontWeight="600"
-            >
-              SL
-            </text>
-            <text
-              x={W - PAD_RIGHT + 4}
-              y={yEntry + 4}
-              fontSize={8}
-              fill="#6366f1"
-              fontWeight="600"
-            >
-              Entry
-            </text>
+            <text x={W - PAD_RIGHT + 4} y={yTP + 4} fontSize={8} fill="#16a34a" fontWeight="600">TP</text>
+            <text x={W - PAD_RIGHT + 4} y={ySL + 4} fontSize={8} fill="#dc2626" fontWeight="600">SL</text>
+            <text x={W - PAD_RIGHT + 4} y={yEntry + 4} fontSize={8} fill="#6366f1" fontWeight="600">Entry</text>
             <text
               x={W - PAD_RIGHT + 4}
               y={yCurrent + 4}
@@ -296,6 +279,13 @@ export function PLChartOverlay({
             >
               Now
             </text>
+
+            {/* 24h label on sparkline (bottom-left) */}
+            {sparklinePoints && (
+              <text x={PAD_LEFT + 2} y={H - 4} fontSize={8} fill="#94a3b8">
+                24h
+              </text>
+            )}
           </svg>
         </div>
 
@@ -332,12 +322,8 @@ export function PLChartOverlay({
               <span className="text-muted-foreground">SL: {formatPrice(sl)}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div
-                className={`w-3 h-0.5 ${isProfit ? "bg-green-600" : "bg-red-600"}`}
-              />
-              <span className="text-muted-foreground">
-                Now: {formatPrice(currentPrice)}
-              </span>
+              <div className={`w-3 h-0.5 ${isProfit ? "bg-green-600" : "bg-red-600"}`} />
+              <span className="text-muted-foreground">Now: {formatPrice(currentPrice)}</span>
             </div>
           </div>
         </div>

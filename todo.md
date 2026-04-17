@@ -726,3 +726,8 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Badge during market-closed hours: PLBadge now accepts `marketClosed` prop; shows grey "Market Closed" label with last known price and P/L instead of hiding
 - [x] P/L at close persistence: signalPerformance schema gains `outcome` + `closedAt` columns; trackSignalOutcomes cron writes final P/L + outcome + closedAt before deactivating; Signal History table shows TP Hit / SL Hit / Active badges and uses closedAt as the date
 - [x] Clickable badge: new PLChartOverlay component (Dialog) with SVG sparkline showing entry, current, TP, SL price levels; progress bar to TP; legend; badge shows "tap for chart" hint
+
+## Phase 74: Three New Features (Apr 17, 2026) - COMPLETE ✅
+- [x] Referral reward notification email: sendReferralRewardEmail() added to email.ts; grantReferralReward() now calls it after granting the free month; personalised with referrer name + referred friend's name
+- [x] Chart overlay 24h sparkline: getPriceHistory() added to polygonService.ts (Polygon /range/1/hour endpoint); market.getPriceHistory tRPC endpoint added; PLChartOverlay fetches real 24h hourly data and renders as faint coloured polyline behind level markers; shows Loader2 spinner while fetching
+- [x] Signal History CSV export: exportCSV() function added to SignalHistory.tsx; orange "Export CSV" button in header next to time-range filters; exports Pair, Type, Entry, Close, Outcome, P/L ($), P/L (pips), Date; filename includes time range and date

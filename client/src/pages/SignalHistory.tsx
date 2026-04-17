@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, Download } from "lucide-react";
 import { useLocation } from "wouter";
 
 type TimeRange = "7d" | "30d" | "90d" | "all";
@@ -31,6 +31,52 @@ export default function SignalHistory() {
   const formatPips = (value: number) => {
     const sign = value >= 0 ? "+" : "";
     return `${sign}${value.toFixed(1)} pips`;
+  };
+
+  /**
+   * Export the currently visible signals as a CSV file.
+   * Uses a client-side Blob download — no server round-trip needed.
+   */
+  const exportCSV = () => {
+    if (!historyData?.signals?.length) return;
+
+    const headers = ["Pair", "Type", "Entry Price", "Close Price", "Outcome", "P/L ($)", "P/L (pips)", "Date"];
+    const rows = historyData.signals.map((s) => {
+      const outcome =
+        (s as any).outcome === "target_hit"
+          ? "TP Hit"
+          : (s as any).outcome === "stop_loss_hit"
+          ? "SL Hit"
+          : "Active";
+      const date = (s as any).closedAt
+        ? new Date((s as any).closedAt).toLocaleDateString()
+        : new Date(s.createdAt).toLocaleDateString();
+      return [
+        s.pair,
+        s.signalType,
+        s.entryPrice,
+        s.currentPrice,
+        outcome,
+        s.plDollars.toFixed(2),
+        s.plPips.toFixed(1),
+        date,
+      ];
+    });
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `fox-trade-master-signals-${timeRange}-${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   if (isLoading) {
@@ -62,8 +108,8 @@ export default function SignalHistory() {
               <h1 className="text-2xl font-bold">Signal Performance History</h1>
             </div>
 
-            {/* Time Range Filter */}
-            <div className="flex gap-2">
+            {/* Time Range Filter + Export */}
+            <div className="flex gap-2 items-center">
               {(["7d", "30d", "90d", "all"] as TimeRange[]).map((range) => (
                 <Button
                   key={range}
@@ -74,6 +120,16 @@ export default function SignalHistory() {
                   {range === "all" ? "All Time" : range.toUpperCase()}
                 </Button>
               ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportCSV}
+                disabled={!historyData?.signals?.length}
+                className="ml-2 gap-1.5 border-orange-300 text-orange-600 hover:bg-orange-50"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export CSV
+              </Button>
             </div>
           </div>
         </div>

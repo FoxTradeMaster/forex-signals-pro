@@ -1102,3 +1102,104 @@ export async function sendFreeWelcomeEmail(
     return false;
   }
 }
+
+
+/**
+ * Send referral reward notification email to the referrer
+ * when their referred friend upgrades to a paid plan.
+ */
+export async function sendReferralRewardEmail(
+  toEmail: string,
+  referrerName: string,
+  referredName: string,
+  freeMonthsGranted: number = 1
+): Promise<boolean> {
+  if (!SENDGRID_API_KEY) {
+    console.warn('[Email] SendGrid API key not configured, skipping referral reward email');
+    return false;
+  }
+
+  const dashboardUrl = 'https://foxtrademaster.com';
+
+  const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>You Earned a Free Month!</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .wrapper { max-width: 600px; margin: 0 auto; padding: 32px 16px; }
+    .card { background: #1e293b; border-radius: 16px; overflow: hidden; border: 1px solid #334155; }
+    .header { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 32px 32px 24px; text-align: center; }
+    .header h1 { margin: 0; color: #fff; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+    .header p { margin: 8px 0 0; color: rgba(255,255,255,0.85); font-size: 14px; }
+    .reward-badge { background: #0f172a; border-radius: 12px; margin: 24px 32px; padding: 20px; text-align: center; border: 2px solid #f97316; }
+    .reward-badge .amount { font-size: 48px; font-weight: 900; color: #f97316; line-height: 1; }
+    .reward-badge .label { font-size: 14px; color: #94a3b8; margin-top: 4px; }
+    .body { padding: 24px 32px; }
+    .text { color: #cbd5e1; font-size: 15px; line-height: 1.7; margin: 0 0 16px; }
+    .highlight { color: #f97316; font-weight: 700; }
+    .cta-btn { display: block; background: linear-gradient(135deg, #f97316, #ea580c); color: #fff; text-decoration: none; text-align: center; padding: 14px 32px; border-radius: 10px; font-weight: 700; font-size: 16px; margin: 24px 0; }
+    .footer { padding: 16px 32px 24px; text-align: center; color: #475569; font-size: 12px; }
+    .divider { height: 1px; background: #334155; margin: 0 32px; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="card">
+      <div class="header">
+        <h1>🦊 FOX TRADE MASTER™</h1>
+        <p>Referral Reward — Your friend just upgraded!</p>
+      </div>
+
+      <div class="reward-badge">
+        <div class="amount">${freeMonthsGranted}</div>
+        <div class="label">FREE MONTH${freeMonthsGranted > 1 ? 'S' : ''} ADDED TO YOUR ACCOUNT</div>
+      </div>
+
+      <div class="body">
+        <p class="text">Hey <span class="highlight">${referrerName}</span>,</p>
+        <p class="text">
+          Great news — your friend <span class="highlight">${referredName}</span> just upgraded to a paid plan on FOX TRADE MASTER™!
+          As a thank-you for spreading the word, we've automatically added
+          <span class="highlight">${freeMonthsGranted} free month${freeMonthsGranted > 1 ? 's' : ''}</span> to your subscription.
+        </p>
+        <p class="text">
+          No action needed — your account has already been updated. Keep sharing your referral link to earn more free months every time a friend upgrades.
+        </p>
+        <a href="${dashboardUrl}" class="cta-btn">View My Dashboard →</a>
+        <p class="text" style="font-size:13px;color:#64748b;">
+          Want to earn more? Share your referral link from the <strong>Refer a Friend</strong> tab in your dashboard.
+          Every friend who upgrades earns you another free month — no limit!
+        </p>
+      </div>
+
+      <div class="divider"></div>
+      <div class="footer">
+        <p>© ${new Date().getFullYear()} FOX TRADE MASTER™. All rights reserved.</p>
+        <p>You received this email because you have a FOX TRADE MASTER™ account.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  try {
+    const msg = {
+      to: toEmail,
+      from: { email: FROM_EMAIL, name: 'FOX TRADE MASTER™' },
+      subject: `🎉 You earned ${freeMonthsGranted} free month${freeMonthsGranted > 1 ? 's' : ''}! Your friend just upgraded`,
+      text: `Hey ${referrerName}! Your friend ${referredName} just upgraded to a paid plan. We've added ${freeMonthsGranted} free month${freeMonthsGranted > 1 ? 's' : ''} to your account. Visit ${dashboardUrl} to see your updated subscription.`,
+      html: emailHtml,
+    };
+    await sgMail.send(msg);
+    console.log('[Email] Referral reward email sent to', toEmail);
+    return true;
+  } catch (error) {
+    console.error('[Email] Failed to send referral reward email:', error);
+    return false;
+  }
+}

@@ -309,7 +309,7 @@ export const appRouter = router({
         try {
           const paidUser = await getUser(ctx.user.id);
           if (paidUser?.referredBy) {
-            const rewarded = await grantReferralReward(paidUser.referredBy);
+            const rewarded = await grantReferralReward(paidUser.referredBy, ctx.user.name || 'your friend');
             if (rewarded) {
               console.log(`[Referral] Rewarded referrer ${paidUser.referredBy} for conversion of ${ctx.user.id}`);
             }
@@ -638,6 +638,14 @@ export const appRouter = router({
           ...status,
           nextOpenFormatted: status.nextOpenTime ? formatTimeUntilOpen(status.nextOpenTime) : null,
         };
+      }),
+
+    // Get 24h hourly price history for a forex pair (used by PLChartOverlay sparkline)
+    getPriceHistory: publicProcedure
+      .input(z.object({ pair: z.string(), hours: z.number().optional().default(24) }))
+      .query(async ({ input }) => {
+        const { getPriceHistory } = await import('./polygonService');
+        return getPriceHistory(input.pair, input.hours);
       }),
 
     // Get market status for all pairs

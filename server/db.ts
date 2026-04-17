@@ -1491,7 +1491,7 @@ export async function getSignalStats(): Promise<{
  * Grant 1 free month to a referrer when their referred user converts to a paid plan.
  * Safe to call multiple times — idempotent if referrer already has active subscription.
  */
-export async function grantReferralReward(referrerId: string): Promise<boolean> {
+export async function grantReferralReward(referrerId: string, referredName: string = 'your friend'): Promise<boolean> {
   const db = await getDb();
   if (!db) return false;
 
@@ -1520,6 +1520,22 @@ export async function grantReferralReward(referrerId: string): Promise<boolean> 
       .where(eq(users.id, referrerId));
 
     console.log(`[Referral] Granted 1 free month to referrer ${referrerId} (expires ${newExpiry.toISOString()})`);
+
+    // Send reward notification email (non-fatal if it fails)
+    try {
+      if (referrer.email) {
+        const { sendReferralRewardEmail } = await import('./email');
+        await sendReferralRewardEmail(
+          referrer.email,
+          referrer.name || 'Trader',
+          referredName,
+          1
+        );
+      }
+    } catch (emailErr) {
+      console.warn('[Referral] Could not send reward email (non-fatal):', emailErr);
+    }
+
     return true;
   } catch (error) {
     console.error('[Referral] Failed to grant reward:', error);
