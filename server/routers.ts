@@ -579,11 +579,13 @@ export const appRouter = router({
           const currentPrice = priceMap.get(s.pair);
           let status: "target_hit" | "stop_loss_hit" | "active" = "active";
           let plDollars = 0;
+          let plPips = 0;
 
           if (currentPrice) {
             status = getSignalStatus(s, currentPrice);
             const pl = calculatePL(s, currentPrice);
             plDollars = pl.plDollars;
+            plPips = pl.plPips;
           }
 
           return {
@@ -592,6 +594,7 @@ export const appRouter = router({
             status,
             currentPrice,
             plDollars,
+            plPips,
           };
         });
       }),

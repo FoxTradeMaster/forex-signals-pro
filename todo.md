@@ -741,3 +741,10 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Signal History sortable columns: SortKey/SortDir state; Pair, P/L ($), P/L (pips), Date headers clickable with ArrowUpDown/ArrowUp/ArrowDown icons; sort applied client-side via [...signals].sort()
 - [x] PLChartOverlay time axis labels: PAD_BOTTOM increased to 32px; 5 labels (24h ago, 18h, 12h, 6h, Now) rendered at evenly-spaced ratios along bottom of SVG sparkline
 - [x] Admin email HTML iframe preview: getEmailPreview tRPC query returns raw HTML; EmailPreviewTab has "Preview" + "Send Test" buttons per email; renders in 520px-tall iframe with sandbox="allow-same-origin"; "Close" button dismisses; "Refresh" re-fetches same type
+
+## Phase 77: Fix P/L Badge Zero Values in Production (Apr 22, 2026) - COMPLETE ✅
+- [x] Root cause: polygonService used /v2/aggs/ticker/{pair}/prev (yesterday's close) which often equals entry price → P/L always 0
+- [x] Fix: rewrote getForexPrice() to use /v2/snapshot/locale/global/markets/forex/tickers/{pair} (real-time bid/ask midpoint); fallback chain: lastQuote midpoint → today's candle close → prev day close
+- [x] Added 30-second in-memory Map cache (CACHE_TTL_MS=30000) to prevent rate-limiting with 354 signals across many pairs
+- [x] getWithStatus now returns plPips alongside plDollars; Dashboard localSignals mapped object includes plPips: 0 to match type
+- [x] TypeScript: 0 errors; 18/18 non-DB tests pass

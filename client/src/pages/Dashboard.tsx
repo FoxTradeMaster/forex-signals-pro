@@ -102,6 +102,7 @@ export default function Dashboard() {
         status: 'active' as const,
         currentPrice: undefined,
         plDollars: 0,
+        plPips: 0,
       }));
       setLocalSignals(mapped);
       refetchSignals();
