@@ -3,18 +3,20 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, TrendingUp, TrendingDown, Download, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, Download, ArrowUpDown, ArrowUp, ArrowDown, Filter } from "lucide-react";
 import { useLocation } from "wouter";
 
 type TimeRange = "7d" | "30d" | "90d" | "all";
 type SortKey = "pair" | "plDollars" | "plPips" | "date";
 type SortDir = "asc" | "desc";
+type OutcomeFilter = "all" | "target_hit" | "stop_loss_hit" | "active";
 
 export default function SignalHistory() {
   const [, navigate] = useLocation();
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [outcomeFilter, setOutcomeFilter] = useState<OutcomeFilter>("all");
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -53,15 +55,45 @@ export default function SignalHistory() {
     return `${sign}${value.toFixed(1)} pips`;
   };
 
+  // Apply outcome filter to signals list
+  const getFilteredSignals = () => {
+    if (!historyData?.signals) return [];
+    const sorted = [...historyData.signals].sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === "pair") cmp = a.pair.localeCompare(b.pair);
+      else if (sortKey === "plDollars") cmp = a.plDollars - b.plDollars;
+      else if (sortKey === "plPips") cmp = a.plPips - b.plPips;
+      else if (sortKey === "date") {
+        const aDate = (a as any).closedAt ? new Date((a as any).closedAt).getTime() : new Date(a.createdAt).getTime();
+        const bDate = (b as any).closedAt ? new Date((b as any).closedAt).getTime() : new Date(b.createdAt).getTime();
+        cmp = aDate - bDate;
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+
+    if (outcomeFilter === "all") return sorted;
+    if (outcomeFilter === "active") return sorted.filter(s => !(s as any).outcome);
+    return sorted.filter(s => (s as any).outcome === outcomeFilter);
+  };
+
+  const filteredSignals = getFilteredSignals();
+
+  // Outcome filter button config
+  const outcomeOptions: { value: OutcomeFilter; label: string; className: string }[] = [
+    { value: "all", label: "All", className: "" },
+    { value: "target_hit", label: "✅ TP Hit", className: "text-green-700 border-green-300 hover:bg-green-50" },
+    { value: "stop_loss_hit", label: "❌ SL Hit", className: "text-red-700 border-red-300 hover:bg-red-50" },
+    { value: "active", label: "⏳ Active", className: "text-blue-700 border-blue-300 hover:bg-blue-50" },
+  ];
+
   /**
-   * Export the currently visible signals as a CSV file.
-   * Uses a client-side Blob download — no server round-trip needed.
+   * Export the currently filtered signals as a CSV file.
    */
   const exportCSV = () => {
-    if (!historyData?.signals?.length) return;
+    if (!filteredSignals.length) return;
 
     const headers = ["Pair", "Type", "Entry Price", "Close Price", "Outcome", "P/L ($)", "P/L (pips)", "Date"];
-    const rows = historyData.signals.map((s) => {
+    const rows = filteredSignals.map((s) => {
       const outcome =
         (s as any).outcome === "target_hit"
           ? "TP Hit"
@@ -92,7 +124,7 @@ export default function SignalHistory() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `fox-trade-master-signals-${timeRange}-${new Date().toISOString().split("T")[0]}.csv`;
+    link.download = `fox-trade-master-signals-${timeRange}-${outcomeFilter}-${new Date().toISOString().split("T")[0]}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -147,7 +179,7 @@ export default function SignalHistory() {
               variant="outline"
               size="sm"
               onClick={exportCSV}
-              disabled={!historyData?.signals?.length}
+              disabled={!filteredSignals.length}
               className="gap-1.5 border-orange-300 text-orange-600 hover:bg-orange-50 text-xs px-3"
             >
               <Download className="h-3.5 w-3.5" />
@@ -273,10 +305,30 @@ export default function SignalHistory() {
             {/* Signals Table */}
             <Card>
               <CardHeader>
-                <CardTitle>All Signals</CardTitle>
-                <CardDescription>
-                  Showing {historyData.signals.length} signals from the last {timeRange === "all" ? "all time" : timeRange}
-                </CardDescription>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <CardTitle>All Signals</CardTitle>
+                    <CardDescription>
+                      Showing {filteredSignals.length} of {historyData.signals.length} signals
+                      {outcomeFilter !== "all" ? ` (filtered by: ${outcomeOptions.find(o => o.value === outcomeFilter)?.label})` : ""}
+                    </CardDescription>
+                  </div>
+                  {/* Outcome filter buttons */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    {outcomeOptions.map((opt) => (
+                      <Button
+                        key={opt.value}
+                        variant={outcomeFilter === opt.value ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setOutcomeFilter(opt.value)}
+                        className={`text-xs px-2.5 py-1 h-7 ${outcomeFilter !== opt.value ? opt.className : ""}`}
+                      >
+                        {opt.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -314,18 +366,7 @@ export default function SignalHistory() {
                       </tr>
                     </thead>
                     <tbody>
-                      {[...(historyData.signals)].sort((a, b) => {
-                        let cmp = 0;
-                        if (sortKey === "pair") cmp = a.pair.localeCompare(b.pair);
-                        else if (sortKey === "plDollars") cmp = a.plDollars - b.plDollars;
-                        else if (sortKey === "plPips") cmp = a.plPips - b.plPips;
-                        else if (sortKey === "date") {
-                          const aDate = (a as any).closedAt ? new Date((a as any).closedAt).getTime() : new Date(a.createdAt).getTime();
-                          const bDate = (b as any).closedAt ? new Date((b as any).closedAt).getTime() : new Date(b.createdAt).getTime();
-                          cmp = aDate - bDate;
-                        }
-                        return sortDir === "asc" ? cmp : -cmp;
-                      }).map((signal) => (
+                      {filteredSignals.map((signal) => (
                         <tr key={signal.signalId} className="border-b hover:bg-muted/50">
                           <td className="py-3 px-4 font-semibold">{signal.pair}</td>
                           <td className="py-3 px-4">
@@ -366,9 +407,11 @@ export default function SignalHistory() {
                     </tbody>
                   </table>
 
-                  {historyData.signals.length === 0 && (
+                  {filteredSignals.length === 0 && (
                     <div className="text-center py-12 text-muted-foreground">
-                      No signals found for this time period
+                      {outcomeFilter !== "all"
+                        ? `No ${outcomeOptions.find(o => o.value === outcomeFilter)?.label} signals found for this time period`
+                        : "No signals found for this time period"}
                     </div>
                   )}
                 </div>

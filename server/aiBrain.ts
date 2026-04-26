@@ -555,6 +555,48 @@ export async function recordUserFeedback(
 }
 
 /**
+ * Ensure the global AI brain stats row exists.
+ * Called on server startup so the AI Brain page always has data to display.
+ * Also recalculates stats from existing aiStrategyWeights records.
+ */
+export async function ensureAiBrainStatsRow(): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  try {
+    // Check if the global row already exists
+    const existing = await db
+      .select()
+      .from(aiBrainStats)
+      .where(eq(aiBrainStats.id, "global"))
+      .limit(1);
+
+    if (existing.length === 0) {
+      // Insert a default row so the page renders immediately
+      await db.insert(aiBrainStats).values({
+        id: "global",
+        totalSignalsAnalyzed: "0",
+        totalOutcomesLearned: "0",
+        overallWinRate: "0",
+        bestPair: null,
+        bestStrategy: null,
+        lastLearningCycle: new Date(),
+        totalFeedbackReceived: "0",
+        updatedAt: new Date(),
+      });
+      console.log("[AI Brain] Seeded default global stats row.");
+    }
+
+    // Always recalculate from existing data so stats are accurate
+    await updateBrainStats();
+    console.log("[AI Brain] Brain stats initialised/recalculated on startup.");
+  } catch (error) {
+    // Non-fatal — log and continue
+    console.warn("[AI Brain] ensureAiBrainStatsRow warning:", error);
+  }
+}
+
+/**
  * Get AI brain statistics for display
  */
 export async function getAiBrainStats() {

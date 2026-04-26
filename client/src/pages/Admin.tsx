@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
-import { Search, UserCheck, UserX, ShieldCheck, ShieldOff, Calendar, RefreshCw, DollarSign, Users, CreditCard, TrendingUp, Mail, Send, CheckCircle } from "lucide-react";
+import { Search, UserCheck, UserX, ShieldCheck, ShieldOff, Calendar, RefreshCw, DollarSign, Users, CreditCard, TrendingUp, Mail, Send, CheckCircle, Megaphone, AlertTriangle } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function Admin() {
   const { user, loading } = useAuth();
@@ -169,11 +170,12 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="users" className="space-y-4">
-          <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full max-w-2xl">
+          <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full max-w-3xl">
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
             <TabsTrigger value="grant">Grant Access</TabsTrigger>
             <TabsTrigger value="emails">Email Preview</TabsTrigger>
+            <TabsTrigger value="blast">Bulk Email</TabsTrigger>
           </TabsList>
 
           {/* Users Tab */}
@@ -439,6 +441,11 @@ export default function Admin() {
           <TabsContent value="emails">
             <EmailPreviewTab />
           </TabsContent>
+
+          {/* Bulk Email Tab */}
+          <TabsContent value="blast">
+            <BulkEmailTab />
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -480,6 +487,125 @@ export default function Admin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+/** Standalone sub-component for the Bulk Email Blast tab */
+function BulkEmailTab() {
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [targetTier, setTargetTier] = useState<"all" | "free" | "premium" | "pro">("all");
+  const [confirmed, setConfirmed] = useState(false);
+
+  const sendBulkEmail = trpc.admin.sendBulkEmail.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      setSubject("");
+      setBody("");
+      setConfirmed(false);
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const tierLabels: Record<string, string> = {
+    all: "All Users",
+    free: "Free Tier Only",
+    premium: "Premium Tier Only",
+    pro: "Pro Tier Only",
+  };
+
+  return (
+    <div className="space-y-4 max-w-3xl">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Megaphone className="h-5 w-5 text-orange-500" />
+            Bulk Email Blast
+          </CardTitle>
+          <CardDescription>
+            Send a custom email to all users or a specific subscription tier. Emails are sent via SendGrid.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {/* Target tier */}
+          <div className="space-y-2">
+            <Label>Target Audience</Label>
+            <Select value={targetTier} onValueChange={(v) => setTargetTier(v as any)}>
+              <SelectTrigger className="w-64">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Users</SelectItem>
+                <SelectItem value="free">Free Tier Only</SelectItem>
+                <SelectItem value="premium">Premium Tier Only</SelectItem>
+                <SelectItem value="pro">Pro Tier Only</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Subject */}
+          <div className="space-y-2">
+            <Label htmlFor="bulk-subject">Subject Line</Label>
+            <Input
+              id="bulk-subject"
+              placeholder="e.g. Important update from FOX TRADE MASTER™"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+            />
+          </div>
+
+          {/* Body */}
+          <div className="space-y-2">
+            <Label htmlFor="bulk-body">Email Body</Label>
+            <Textarea
+              id="bulk-body"
+              placeholder="Write your message here. Line breaks will be preserved."
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              rows={8}
+              className="resize-y"
+            />
+            <p className="text-xs text-muted-foreground">Plain text — line breaks become &lt;br&gt; tags in the email.</p>
+          </div>
+
+          {/* Confirmation checkbox */}
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 border border-amber-200">
+            <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-amber-800">Confirm before sending</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                This will send a real email to <strong>{tierLabels[targetTier]}</strong>. This action cannot be undone.
+              </p>
+              <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={confirmed}
+                  onChange={(e) => setConfirmed(e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-xs text-amber-800 font-medium">I understand this will send real emails</span>
+              </label>
+            </div>
+          </div>
+
+          <Button
+            className="bg-orange-500 hover:bg-orange-600 text-white gap-2"
+            disabled={!subject.trim() || !body.trim() || !confirmed || sendBulkEmail.isPending}
+            onClick={() => sendBulkEmail.mutate({ subject, body, targetTier })}
+          >
+            <Megaphone className="h-4 w-4" />
+            {sendBulkEmail.isPending ? "Sending..." : `Send to ${tierLabels[targetTier]}`}
+          </Button>
+
+          {sendBulkEmail.data && (
+            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+              <CheckCircle className="h-4 w-4" />
+              {sendBulkEmail.data.message}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -100,9 +100,9 @@ export default function Dashboard() {
         isAiGenerated: s.isAiGenerated ? 'true' : 'false',
         // New signals just generated — no live price yet, P/L will show after first refresh
         status: 'active' as const,
-        currentPrice: undefined,
-        plDollars: 0,
-        plPips: 0,
+        currentPrice: null as number | null,
+        plDollars: null as number | null,
+        plPips: null as number | null,
       }));
       setLocalSignals(mapped);
       refetchSignals();

@@ -748,3 +748,17 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Added 30-second in-memory Map cache (CACHE_TTL_MS=30000) to prevent rate-limiting with 354 signals across many pairs
 - [x] getWithStatus now returns plPips alongside plDollars; Dashboard localSignals mapped object includes plPips: 0 to match type
 - [x] TypeScript: 0 errors; 18/18 non-DB tests pass
+
+## Phase 78: Fix AI Brain Stats + P/L Modal Zero Values (Apr 24, 2026)
+- [ ] Diagnose why AI Brain stats page shows no activity (empty table vs. learning cycle not running)
+- [ ] Fix AI Brain stats to populate from real signal outcomes and display correctly
+- [ ] Diagnose why P/L modals still show 0 after Polygon snapshot fix (data flow from server to badge)
+- [ ] Fix P/L modal to correctly display live profit/loss based on signal entry price vs current price
+
+## Phase 78: Fix AI Brain Stats + New Features (Apr 26, 2026) - COMPLETE ✅
+- [x] AI Brain stats: added ensureAiBrainStatsRow() to aiBrain.ts — seeds "global" row if missing, recalculates totalSignalsAnalyzed/overallWinRate/bestPair from existing aiStrategyWeights data
+- [x] ensureAiBrainStatsRow() called on server startup (server/_core/index.ts) so stats are always populated
+- [x] admin.recalculateAiBrainStats tRPC mutation added — admins can manually trigger recalculation from Admin panel
+- [x] Signal History outcome filter: OutcomeFilter state (all/target_hit/stop_loss_hit/active); filter buttons (All / ✅ TP Hit / ❌ SL Hit / ⏳ Active) in CardHeader; filteredSignals computed from sorted list; empty state message adapts to active filter; CSV export uses filtered list
+- [x] PLChartOverlay hover tooltip: invisible <rect> overlay captures onMouseMove/onMouseLeave; finds closest data point by ratio; renders vertical crosshair dashed line + dot on sparkline + dark tooltip box with price + time; tooltip stays within SVG bounds
+- [x] Admin Bulk Email Blast: new "Bulk Email" tab (5th tab in Admin panel); BulkEmailTab component with target tier selector (All/Free/Premium/Pro), subject line input, body textarea, confirmation checkbox with warning banner; admin.sendBulkEmail tRPC mutation loops through matching users and sends branded HTML email via SendGrid; returns sent/failed count

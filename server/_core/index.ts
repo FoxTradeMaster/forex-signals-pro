@@ -68,6 +68,13 @@ async function startServer() {
   await bootstrapDatabase();
   // Also run drizzle migrations (handles schema changes/column additions)
   await runMigrationsOnStartup();
+  // Seed AI Brain stats row so the AI Brain page always has data to display
+  try {
+    const { ensureAiBrainStatsRow } = await import('../aiBrain');
+    await ensureAiBrainStatsRow();
+  } catch (err) {
+    console.warn('[AI Brain] Startup stats seed warning (non-fatal):', err);
+  }
 
   const app = express();
   const server = createServer(app);

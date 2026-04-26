@@ -1,3 +1,4 @@
+import { useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TrendingUp, TrendingDown, Target, ShieldAlert, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -23,6 +24,7 @@ interface PLChartOverlayProps {
  *  - A faint 24h hourly sparkline (real Polygon data)
  *  - Horizontal dashed lines for Entry, TP, SL, and Current price
  *  - A progress bar toward Take Profit
+ *  - Hover tooltip showing price and time at cursor position
  */
 export function PLChartOverlay({
   open,
@@ -37,6 +39,15 @@ export function PLChartOverlay({
   const sl = parseFloat(signal.stopLoss);
   const isBuy = signal.signalType === "BUY";
   const isProfit = plDollars >= 0;
+
+  // Hover tooltip state
+  const [hoverInfo, setHoverInfo] = useState<{
+    x: number;
+    y: number;
+    price: number;
+    time: string;
+    svgX: number;
+  } | null>(null);
 
   // Fetch 24h price history only when the dialog is open
   const { data: history = [], isLoading: historyLoading } =
@@ -87,13 +98,12 @@ export function PLChartOverlay({
       : "";
 
   // Calculate the X position of the signal creation timestamp on the sparkline
-  // The sparkline spans the last 24h; we map the signal's createdAt to that range
   const signalCreationX: number | null = (() => {
     if (!signal.createdAt || history.length < 2) return null;
     const createdMs = new Date(signal.createdAt).getTime();
     const firstMs = history[0].t;
     const lastMs = history[history.length - 1].t;
-    if (createdMs < firstMs || createdMs > lastMs) return null; // outside visible range
+    if (createdMs < firstMs || createdMs > lastMs) return null;
     const ratio = (createdMs - firstMs) / (lastMs - firstMs);
     return PAD_LEFT + ratio * chartW;
   })();
@@ -115,6 +125,65 @@ export function PLChartOverlay({
   const progressToTP = isBuy
     ? Math.max(0, Math.min(100, ((currentPrice - entry) / (tp - entry)) * 100))
     : Math.max(0, Math.min(100, ((entry - currentPrice) / (entry - tp)) * 100));
+
+  // Handle mouse move over the SVG chart area for tooltip
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<SVGRectElement>) => {
+      if (history.length < 2) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      // Compute position relative to the SVG element
+      const svgEl = e.currentTarget.closest("svg");
+      if (!svgEl) return;
+      const svgRect = svgEl.getBoundingClientRect();
+      const mouseX = e.clientX - svgRect.left;
+      const mouseY = e.clientY - svgRect.top;
+
+      // Map mouseX to chart coordinates
+      const svgX = (mouseX / svgRect.width) * W;
+      const chartRelX = svgX - PAD_LEFT;
+      if (chartRelX < 0 || chartRelX > chartW) {
+        setHoverInfo(null);
+        return;
+      }
+
+      // Find the closest data point
+      const ratio = chartRelX / chartW;
+      const idx = Math.round(ratio * (history.length - 1));
+      const clampedIdx = Math.max(0, Math.min(history.length - 1, idx));
+      const dataPoint = history[clampedIdx];
+
+      const dotX = PAD_LEFT + (clampedIdx / (history.length - 1)) * chartW;
+      const dotY = toY(dataPoint.c);
+
+      const timeStr = new Date(dataPoint.t).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      setHoverInfo({
+        x: mouseX,
+        y: mouseY,
+        price: dataPoint.c,
+        time: timeStr,
+        svgX: dotX,
+      });
+    },
+    [history, chartW, lo, hi, chartH, PAD_LEFT, PAD_TOP]
+  );
+
+  const handleMouseLeave = useCallback(() => {
+    setHoverInfo(null);
+  }, []);
+
+  // Tooltip position: keep it within SVG bounds
+  const tooltipW = 90;
+  const tooltipH = 32;
+  const tooltipX = hoverInfo
+    ? Math.min(hoverInfo.svgX + 8, W - tooltipW - 4)
+    : 0;
+  const tooltipY = hoverInfo
+    ? Math.max(PAD_TOP, toY(hoverInfo.price) - tooltipH - 6)
+    : 0;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -177,6 +246,7 @@ export function PLChartOverlay({
             height={H}
             viewBox={`0 0 ${W} ${H}`}
             className="w-full"
+            style={{ cursor: history.length >= 2 ? "crosshair" : "default" }}
           >
             {/* Profit zone (green band) */}
             <rect
@@ -211,126 +281,44 @@ export function PLChartOverlay({
             )}
 
             {/* TP line */}
-            <line
-              x1={PAD_LEFT}
-              y1={yTP}
-              x2={W - PAD_RIGHT}
-              y2={yTP}
-              stroke="#22c55e"
-              strokeWidth={1.5}
-              strokeDasharray="4 3"
-            />
+            <line x1={PAD_LEFT} y1={yTP} x2={W - PAD_RIGHT} y2={yTP} stroke="#22c55e" strokeWidth={1.5} strokeDasharray="4 3" />
             {/* SL line */}
-            <line
-              x1={PAD_LEFT}
-              y1={ySL}
-              x2={W - PAD_RIGHT}
-              y2={ySL}
-              stroke="#ef4444"
-              strokeWidth={1.5}
-              strokeDasharray="4 3"
-            />
+            <line x1={PAD_LEFT} y1={ySL} x2={W - PAD_RIGHT} y2={ySL} stroke="#ef4444" strokeWidth={1.5} strokeDasharray="4 3" />
             {/* Entry line */}
-            <line
-              x1={PAD_LEFT}
-              y1={yEntry}
-              x2={W - PAD_RIGHT}
-              y2={yEntry}
-              stroke="#6366f1"
-              strokeWidth={1.5}
-              strokeDasharray="4 3"
-            />
+            <line x1={PAD_LEFT} y1={yEntry} x2={W - PAD_RIGHT} y2={yEntry} stroke="#6366f1" strokeWidth={1.5} strokeDasharray="4 3" />
             {/* Current price line */}
-            <line
-              x1={PAD_LEFT}
-              y1={yCurrent}
-              x2={W - PAD_RIGHT}
-              y2={yCurrent}
-              stroke={isProfit ? "#16a34a" : "#dc2626"}
-              strokeWidth={2}
-            />
+            <line x1={PAD_LEFT} y1={yCurrent} x2={W - PAD_RIGHT} y2={yCurrent} stroke={isProfit ? "#16a34a" : "#dc2626"} strokeWidth={2} />
 
             {/* Current price dot at end of sparkline */}
-            <circle
-              cx={PAD_LEFT + chartW}
-              cy={yCurrent}
-              r={4}
-              fill={isProfit ? "#16a34a" : "#dc2626"}
-            />
+            <circle cx={PAD_LEFT + chartW} cy={yCurrent} r={4} fill={isProfit ? "#16a34a" : "#dc2626"} />
 
             {/* Price labels (left axis) */}
-            <text x={PAD_LEFT - 6} y={yTP + 4} textAnchor="end" fontSize={9} fill="#16a34a" fontWeight="600">
-              {formatPrice(tp)}
-            </text>
-            <text x={PAD_LEFT - 6} y={ySL + 4} textAnchor="end" fontSize={9} fill="#dc2626" fontWeight="600">
-              {formatPrice(sl)}
-            </text>
-            <text x={PAD_LEFT - 6} y={yEntry + 4} textAnchor="end" fontSize={9} fill="#6366f1" fontWeight="600">
-              {formatPrice(entry)}
-            </text>
-            <text
-              x={PAD_LEFT - 6}
-              y={yCurrent + 4}
-              textAnchor="end"
-              fontSize={9}
-              fill={isProfit ? "#16a34a" : "#dc2626"}
-              fontWeight="700"
-            >
-              {formatPrice(currentPrice)}
-            </text>
+            <text x={PAD_LEFT - 6} y={yTP + 4} textAnchor="end" fontSize={9} fill="#16a34a" fontWeight="600">{formatPrice(tp)}</text>
+            <text x={PAD_LEFT - 6} y={ySL + 4} textAnchor="end" fontSize={9} fill="#dc2626" fontWeight="600">{formatPrice(sl)}</text>
+            <text x={PAD_LEFT - 6} y={yEntry + 4} textAnchor="end" fontSize={9} fill="#6366f1" fontWeight="600">{formatPrice(entry)}</text>
+            <text x={PAD_LEFT - 6} y={yCurrent + 4} textAnchor="end" fontSize={9} fill={isProfit ? "#16a34a" : "#dc2626"} fontWeight="700">{formatPrice(currentPrice)}</text>
 
             {/* Right-side labels */}
             <text x={W - PAD_RIGHT + 4} y={yTP + 4} fontSize={8} fill="#16a34a" fontWeight="600">TP</text>
             <text x={W - PAD_RIGHT + 4} y={ySL + 4} fontSize={8} fill="#dc2626" fontWeight="600">SL</text>
             <text x={W - PAD_RIGHT + 4} y={yEntry + 4} fontSize={8} fill="#6366f1" fontWeight="600">Entry</text>
-            <text
-              x={W - PAD_RIGHT + 4}
-              y={yCurrent + 4}
-              fontSize={8}
-              fill={isProfit ? "#16a34a" : "#dc2626"}
-              fontWeight="700"
-            >
-              Now
-            </text>
+            <text x={W - PAD_RIGHT + 4} y={yCurrent + 4} fontSize={8} fill={isProfit ? "#16a34a" : "#dc2626"} fontWeight="700">Now</text>
 
             {/* Signal creation timestamp marker */}
             {signalCreationX !== null && (
               <>
                 <line
-                  x1={signalCreationX}
-                  y1={PAD_TOP}
-                  x2={signalCreationX}
-                  y2={H - PAD_BOTTOM}
-                  stroke="#f97316"
-                  strokeWidth={1.5}
-                  strokeDasharray="3 3"
-                  strokeOpacity={0.75}
+                  x1={signalCreationX} y1={PAD_TOP}
+                  x2={signalCreationX} y2={H - PAD_BOTTOM}
+                  stroke="#f97316" strokeWidth={1.5} strokeDasharray="3 3" strokeOpacity={0.75}
                 />
-                <circle
-                  cx={signalCreationX}
-                  cy={PAD_TOP + 6}
-                  r={3}
-                  fill="#f97316"
-                  opacity={0.85}
-                />
-                <text
-                  x={signalCreationX + 4}
-                  y={PAD_TOP + 10}
-                  fontSize={7}
-                  fill="#f97316"
-                  fontWeight="600"
-                >
-                  Signal
-                </text>
+                <circle cx={signalCreationX} cy={PAD_TOP + 6} r={3} fill="#f97316" opacity={0.85} />
+                <text x={signalCreationX + 4} y={PAD_TOP + 10} fontSize={7} fill="#f97316" fontWeight="600">Signal</text>
               </>
             )}
 
-            {/* Time axis labels along the bottom */}
+            {/* Time axis labels */}
             {history.length >= 2 && (() => {
-              const firstMs = history[0].t;
-              const lastMs = history[history.length - 1].t;
-              const spanMs = lastMs - firstMs || 1;
-              // Show labels at 24h ago, 18h ago, 12h ago, 6h ago, Now
               const labelOffsets = [
                 { label: "24h ago", ratio: 0 },
                 { label: "18h", ratio: 0.25 },
@@ -342,19 +330,77 @@ export function PLChartOverlay({
                 const x = PAD_LEFT + ratio * chartW;
                 const anchor = ratio === 0 ? "start" : ratio === 1 ? "end" : "middle";
                 return (
-                  <text
-                    key={label}
-                    x={x}
-                    y={H - 4}
-                    textAnchor={anchor}
-                    fontSize={8}
-                    fill="#94a3b8"
-                  >
+                  <text key={label} x={x} y={H - 4} textAnchor={anchor} fontSize={8} fill="#94a3b8">
                     {label}
                   </text>
                 );
               });
             })()}
+
+            {/* Invisible hover capture rect over the chart area */}
+            {history.length >= 2 && (
+              <rect
+                x={PAD_LEFT}
+                y={PAD_TOP}
+                width={chartW}
+                height={chartH}
+                fill="transparent"
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
+              />
+            )}
+
+            {/* Hover crosshair + tooltip */}
+            {hoverInfo && (
+              <>
+                {/* Vertical crosshair line */}
+                <line
+                  x1={hoverInfo.svgX} y1={PAD_TOP}
+                  x2={hoverInfo.svgX} y2={H - PAD_BOTTOM}
+                  stroke="#64748b" strokeWidth={1} strokeDasharray="3 2" strokeOpacity={0.6}
+                />
+                {/* Dot on sparkline */}
+                <circle
+                  cx={hoverInfo.svgX}
+                  cy={toY(hoverInfo.price)}
+                  r={3.5}
+                  fill={isProfit ? "#16a34a" : "#dc2626"}
+                  stroke="white"
+                  strokeWidth={1.5}
+                />
+                {/* Tooltip background */}
+                <rect
+                  x={tooltipX}
+                  y={tooltipY}
+                  width={tooltipW}
+                  height={tooltipH}
+                  rx={4}
+                  fill="#1e293b"
+                  opacity={0.92}
+                />
+                {/* Tooltip text: price */}
+                <text
+                  x={tooltipX + tooltipW / 2}
+                  y={tooltipY + 12}
+                  textAnchor="middle"
+                  fontSize={9}
+                  fill="white"
+                  fontWeight="700"
+                >
+                  {formatPrice(hoverInfo.price)}
+                </text>
+                {/* Tooltip text: time */}
+                <text
+                  x={tooltipX + tooltipW / 2}
+                  y={tooltipY + 24}
+                  textAnchor="middle"
+                  fontSize={8}
+                  fill="#94a3b8"
+                >
+                  {hoverInfo.time}
+                </text>
+              </>
+            )}
           </svg>
         </div>
 

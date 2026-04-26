@@ -576,12 +576,14 @@ export const appRouter = router({
         const priceMap = await getForexPrices(uniquePairs);
 
         return signals.map(s => {
-          const currentPrice = priceMap.get(s.pair);
+          // Use null (not undefined) so it explicitly overrides the DB varchar field in the spread.
+          // If priceMap has no entry for this pair, Polygon returned no price → show Market Closed badge.
+          const currentPrice: number | null = priceMap.get(s.pair) ?? null;
           let status: "target_hit" | "stop_loss_hit" | "active" = "active";
-          let plDollars = 0;
-          let plPips = 0;
+          let plDollars: number | null = null;
+          let plPips: number | null = null;
 
-          if (currentPrice) {
+          if (currentPrice !== null) {
             status = getSignalStatus(s, currentPrice);
             const pl = calculatePL(s, currentPrice);
             plDollars = pl.plDollars;
@@ -592,8 +594,8 @@ export const appRouter = router({
             ...s,
             indicators: JSON.parse(s.indicators),
             status,
-            currentPrice,
-            plDollars,
+            currentPrice,   // null overrides DB varchar; number is the live Polygon price
+            plDollars,      // null when no live price; number when price available
             plPips,
           };
         });
@@ -1018,6 +1020,77 @@ export const appRouter = router({
         }
 
         return { success: true, message: `Test "${input.type}" email sent to ${toEmail}` };
+      }),
+
+    // Manually trigger AI Brain stats recalculation (admin only)
+    recalculateAiBrainStats: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const adminUser = await getUser(ctx.user.id);
+        if (!adminUser || adminUser.role !== "admin") throw new Error("Unauthorized: Admin access required");
+        const { ensureAiBrainStatsRow } = await import("./aiBrain");
+        await ensureAiBrainStatsRow();
+        return { success: true, message: "AI Brain stats recalculated successfully" };
+      }),
+
+    // Bulk email blast to all users (admin only)
+    sendBulkEmail: protectedProcedure
+      .input(z.object({
+        subject: z.string().min(1),
+        body: z.string().min(1),
+        targetTier: z.enum(["all", "free", "premium", "pro"]).default("all"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const adminUser = await getUser(ctx.user.id);
+        if (!adminUser || adminUser.role !== "admin") throw new Error("Unauthorized: Admin access required");
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        // Fetch target users
+        let query = db.select({ id: users.id, email: users.email, name: users.name, subscriptionTier: users.subscriptionTier }).from(users);
+        const allUsers = await query;
+        const targets = allUsers.filter(u => {
+          if (!u.email) return false;
+          if (input.targetTier === "all") return true;
+          return u.subscriptionTier === input.targetTier;
+        });
+
+        if (targets.length === 0) return { success: true, sent: 0, message: "No users matched the target tier" };
+
+        // Send via SendGrid
+        const sgMail = (await import("@sendgrid/mail")).default;
+        const apiKey = process.env.SENDGRID_API_KEY;
+        if (!apiKey) throw new Error("SendGrid API key not configured");
+        sgMail.setApiKey(apiKey);
+
+        const fromEmail = process.env.FROM_EMAIL || "noreply@foxtrademaster.com";
+        let sent = 0;
+        let failed = 0;
+        for (const u of targets) {
+          try {
+            await sgMail.send({
+              to: u.email!,
+              from: { email: fromEmail, name: "FOX TRADE MASTER™" },
+              subject: input.subject,
+              html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+                <div style="background:linear-gradient(135deg,#f97316,#ef4444);padding:24px;border-radius:8px 8px 0 0">
+                  <h1 style="color:white;margin:0;font-size:24px">🦊 FOX TRADE MASTER™</h1>
+                </div>
+                <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px">
+                  <p style="color:#374151;font-size:15px">Hi ${u.name || "Trader"},</p>
+                  <div style="color:#374151;font-size:15px;line-height:1.6">${input.body.replace(/\n/g, "<br>")}</div>
+                  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
+                  <p style="color:#9ca3af;font-size:12px">You received this email because you have an account at FOX TRADE MASTER™.</p>
+                </div>
+              </div>`,
+            });
+            sent++;
+          } catch (e) {
+            console.error(`[Admin BulkEmail] Failed to send to ${u.email}:`, e);
+            failed++;
+          }
+        }
+
+        return { success: true, sent, failed, message: `Sent to ${sent} users (${failed} failed)` };
       }),
   }),
   // Alert preferences and historyy
