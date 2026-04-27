@@ -15,6 +15,36 @@ export default function AIBrain() {
   const [refreshKey, setRefreshKey] = useState(0);
   const { isAuthenticated, user } = useAuth();
 
+  // ── All hooks MUST be declared before any early return (Rules of Hooks) ──
+  const { data: brainStats, isLoading: statsLoading, refetch: refetchStats } = trpc.ai.getBrainStats.useQuery(undefined, {
+    refetchInterval: 60000,
+    enabled: isAuthenticated,
+  });
+  const { data: insights, isLoading: insightsLoading } = trpc.ai.getDashboardInsights.useQuery(undefined, {
+    refetchInterval: 60000,
+    enabled: isAuthenticated,
+  });
+  const { data: leaderboard, isLoading: leaderboardLoading } = trpc.ai.getStrategyLeaderboard.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+  const { data: learningHistory, isLoading: historyLoading } = trpc.ai.getLearningHistory.useQuery({ limit: 15 }, {
+    enabled: isAuthenticated,
+  });
+  const utils = trpc.useUtils();
+  const recalculateMutation = trpc.admin.recalculateAiBrainStats.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      utils.ai.getBrainStats.invalidate();
+      utils.ai.getDashboardInsights.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const handleRefresh = () => {
+    setRefreshKey(k => k + 1);
+    refetchStats();
+  };
+  // ── End hooks ──
+
   // Login gate for unauthenticated users
   if (!isAuthenticated) {
     return (
@@ -120,33 +150,6 @@ export default function AIBrain() {
       </div>
     );
   }
-
-  const { data: brainStats, isLoading: statsLoading, refetch: refetchStats } = trpc.ai.getBrainStats.useQuery(undefined, {
-    refetchInterval: 60000,
-  });
-
-  const { data: insights, isLoading: insightsLoading } = trpc.ai.getDashboardInsights.useQuery(undefined, {
-    refetchInterval: 60000,
-  });
-
-  const { data: leaderboard, isLoading: leaderboardLoading } = trpc.ai.getStrategyLeaderboard.useQuery();
-
-  const { data: learningHistory, isLoading: historyLoading } = trpc.ai.getLearningHistory.useQuery({ limit: 15 });
-
-  const utils = trpc.useUtils();
-  const recalculateMutation = trpc.admin.recalculateAiBrainStats.useMutation({
-    onSuccess: (data) => {
-      toast.success(data.message);
-      utils.ai.getBrainStats.invalidate();
-      utils.ai.getDashboardInsights.invalidate();
-    },
-    onError: (err) => toast.error(err.message),
-  });
-
-  const handleRefresh = () => {
-    setRefreshKey(k => k + 1);
-    refetchStats();
-  };
 
   const stats = brainStats?.stats;
   const topPairs = brainStats?.topPairs || [];

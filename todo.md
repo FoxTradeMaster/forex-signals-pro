@@ -768,3 +768,9 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Button calls admin.recalculateAiBrainStats mutation and refreshes the stats query on success
 - [x] Show loading spinner (spinning RefreshCw icon) while mutation is pending
 - [x] Show success/error toast after completion via sonner
+
+## Phase 80: Fix AI Brain Page Crash on Production (Apr 27, 2026) - COMPLETE ✅
+- [x] Root cause: all trpc hooks (getBrainStats, getDashboardInsights, getStrategyLeaderboard, getLearningHistory, recalculateAiBrainStats mutation) were declared AFTER the isAuthenticated early-return gate, violating React's Rules of Hooks — causes crash in production build
+- [x] Fix: moved all hooks to the top of the component (before any early return); added `enabled: isAuthenticated` to all queries so they only fire when logged in
+- [x] TypeScript: 0 errors after fix
+- [x] Push fix to GitHub (Render auto-deploys)
