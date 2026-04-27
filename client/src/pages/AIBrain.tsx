@@ -1,5 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import { Link, useLocation } from "wouter";
 export default function AIBrain() {
   const [, navigate] = useLocation();
   const [refreshKey, setRefreshKey] = useState(0);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   // Login gate for unauthenticated users
   if (!isAuthenticated) {
@@ -132,6 +133,16 @@ export default function AIBrain() {
 
   const { data: learningHistory, isLoading: historyLoading } = trpc.ai.getLearningHistory.useQuery({ limit: 15 });
 
+  const utils = trpc.useUtils();
+  const recalculateMutation = trpc.admin.recalculateAiBrainStats.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      utils.ai.getBrainStats.invalidate();
+      utils.ai.getDashboardInsights.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   const handleRefresh = () => {
     setRefreshKey(k => k + 1);
     refetchStats();
@@ -196,6 +207,20 @@ export default function AIBrain() {
               <RefreshCw className="w-4 h-4 mr-1" />
               Refresh
             </Button>
+            {user?.role === "admin" && (
+              <Button
+                size="sm"
+                onClick={() => recalculateMutation.mutate()}
+                disabled={recalculateMutation.isPending}
+                className="bg-purple-600 hover:bg-purple-700 text-white border-0"
+              >
+                {recalculateMutation.isPending ? (
+                  <><RefreshCw className="w-4 h-4 mr-1 animate-spin" />Recalculating...</>
+                ) : (
+                  <><Zap className="w-4 h-4 mr-1" />Recalculate Stats</>
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </div>

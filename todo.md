@@ -762,3 +762,9 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Signal History outcome filter: OutcomeFilter state (all/target_hit/stop_loss_hit/active); filter buttons (All / ✅ TP Hit / ❌ SL Hit / ⏳ Active) in CardHeader; filteredSignals computed from sorted list; empty state message adapts to active filter; CSV export uses filtered list
 - [x] PLChartOverlay hover tooltip: invisible <rect> overlay captures onMouseMove/onMouseLeave; finds closest data point by ratio; renders vertical crosshair dashed line + dot on sparkline + dark tooltip box with price + time; tooltip stays within SVG bounds
 - [x] Admin Bulk Email Blast: new "Bulk Email" tab (5th tab in Admin panel); BulkEmailTab component with target tier selector (All/Free/Premium/Pro), subject line input, body textarea, confirmation checkbox with warning banner; admin.sendBulkEmail tRPC mutation loops through matching users and sends branded HTML email via SendGrid; returns sent/failed count
+
+## Phase 79: AI Brain Dashboard Recalculate Button (Apr 27, 2026) - COMPLETE ✅
+- [x] Add "Recalculate Stats" button to AI Brain Dashboard page (admin-only, visible only when user.role === "admin")
+- [x] Button calls admin.recalculateAiBrainStats mutation and refreshes the stats query on success
+- [x] Show loading spinner (spinning RefreshCw icon) while mutation is pending
+- [x] Show success/error toast after completion via sonner
