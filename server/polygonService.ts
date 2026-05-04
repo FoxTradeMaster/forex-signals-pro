@@ -17,7 +17,7 @@ interface CacheEntry {
   expiresAt: number; // ms timestamp
 }
 const priceCache = new Map<string, CacheEntry>();
-const CACHE_TTL_MS = 30_000; // 30 seconds
+const CACHE_TTL_MS = 5_000; // 5 seconds — real-time plan supports sub-second quotes; 5s balances freshness vs rate limits
 
 // ── Polygon snapshot response types ──────────────────────────────────────────
 interface PolygonSnapshotResponse {

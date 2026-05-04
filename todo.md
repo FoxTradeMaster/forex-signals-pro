@@ -774,3 +774,12 @@ Upgrade from 2-tier (Free/Premium) to 3-tier (Free/Premium/Pro) subscription sys
 - [x] Fix: moved all hooks to the top of the component (before any early return); added `enabled: isAuthenticated` to all queries so they only fire when logged in
 - [x] TypeScript: 0 errors after fix
 - [x] Push fix to GitHub (Render auto-deploys)
+
+## Phase 81: Polygon Real-Time Data Audit & Upgrade (May 4, 2026) - COMPLETE ✅
+- [x] Verified Polygon API key is active and returning real-time data (quote age: ~1 second for EUR/USD snapshot)
+- [x] Confirmed 1-minute and 1-second candles are available (upgraded plan confirmed)
+- [x] Upgraded aiSignalEngine.ts: now requests 5-minute candles over 14-day range (was: hourly over 5 days) for higher-resolution technical indicators
+- [x] Added "minute5" alias to fetchPolygonOHLC in polygonForexData.ts (multiplier=5, timespan=minute) with graceful fallback to hourly
+- [x] Reduced polygonService.ts price cache TTL from 30s to 5s to serve near-real-time prices for P/L tracking
+- [x] All changes: 0 TypeScript errors
+- [x] Pushed to GitHub (Render auto-deploys)

@@ -133,14 +133,18 @@ export async function generateAISignal(pair: string): Promise<AIEnhancedSignal |
     }
 
     // Step 2: Fetch OHLC data for technical analysis
-    // Use 5-day range: Polygon Currencies Starter returns 95 real-time hourly candles
-    // (30-day range returned stale data on the Basic plan)
+    // Real-time plan: use 5-minute candles over 14 days for high-resolution indicators
+    // (1-second and 1-minute candles are available but 5-min gives the best signal/noise ratio)
     const today = new Date();
-    const fromDate = new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000);
+    const fromDate = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
     const from = fromDate.toISOString().split("T")[0];
     const to = today.toISOString().split("T")[0];
 
-    const ohlc = await fetchPolygonOHLC(pair, "hour", from, to);
+    // Try 5-minute candles first (real-time plan), fall back to hourly
+    let ohlc = await fetchPolygonOHLC(pair, "minute5", from, to);
+    if (!ohlc || ohlc.close.length < 30) {
+      ohlc = await fetchPolygonOHLC(pair, "hour", from, to);
+    }
     
     if (!ohlc || ohlc.close.length < 30) {
       console.warn(`[AI Signal] Insufficient OHLC data for ${pair}`);

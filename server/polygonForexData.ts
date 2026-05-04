@@ -65,20 +65,23 @@ export async function fetchPolygonQuote(pair: string): Promise<number | null> {
  */
 export async function fetchPolygonOHLC(
   pair: string,
-  timespan: "minute" | "hour" | "day" = "hour",
+  timespan: "minute" | "hour" | "day" | "minute5" = "hour",
   from: string, // YYYY-MM-DD
   to: string    // YYYY-MM-DD
 ): Promise<OHLCData | null> {
   try {
     const ticker = formatPairForPolygon(pair);
-    const url = `${POLYGON_BASE_URL}/v2/aggs/ticker/${ticker}/range/1/${timespan}/${from}/${to}`;
+    // "minute5" is a convenience alias for 5-minute candles (multiplier=5, timespan=minute)
+    const multiplier = timespan === "minute5" ? 5 : 1;
+    const actualTimespan = timespan === "minute5" ? "minute" : timespan;
+    const url = `${POLYGON_BASE_URL}/v2/aggs/ticker/${ticker}/range/${multiplier}/${actualTimespan}/${from}/${to}`;
     
     const response = await axios.get(url, {
       params: {
         apiKey: POLYGON_API_KEY,
         adjusted: true,
         sort: "asc",
-        limit: 50000,
+        limit: 50000, // real-time plan supports up to 50,000 results per request
       },
     });
 
